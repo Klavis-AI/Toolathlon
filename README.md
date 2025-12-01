@@ -48,7 +48,7 @@ python eval_client.py run \
   --server-port 8080
 ```
 
-Please check [EVAL_SERVICE_README.md](EVAL_SERVICE_README.md) for more details.
+Please make sure to check [EVAL_SERVICE_README.md](EVAL_SERVICE_README.md) for more details (e.g. if you want to test your locally deployed models).
 
 ---------------------------------
 
