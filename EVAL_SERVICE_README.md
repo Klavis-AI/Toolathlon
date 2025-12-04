@@ -26,6 +26,29 @@ uv add httpx typer websockets
 For locally deployed models that are not publicly accessible:
 
 ```bash
+# Debug running for only one task:
+cat > debug_tasks.txt << EOF
+find-alita-paper
+EOF
+
+python eval_client.py run \
+  --mode private \
+  --base-url http://localhost:8000/v1 \
+  --model-name gpt-4 \
+  --output-dir ./results \
+  --server-host 47.253.6.47 \
+  --api-key dummy \
+  --workers 10 \
+  --server-port 8080 \
+  --ws-proxy-port 8081 \
+  --task-list-file ./debug_tasks.txt \
+  --skip-container-restart
+
+```
+
+If the debug run works fine, then you are ready to launch the full eval on all tasks: 
+
+```bash
 python eval_client.py run \
   --mode private \
   --base-url http://localhost:8000/v1 \
@@ -44,6 +67,8 @@ python eval_client.py run \
 For ready-to-use public API endpoints:
 
 ```bash
+# it is recommended to launch a debug run as above before 
+# the full eval run below
 python eval_client.py run \
   --mode public \
   --base-url https://api.openai.com/v1 \
@@ -58,7 +83,7 @@ python eval_client.py run \
 If the server is idle, your task will be submitted and you will find the results later in the `./results` directory. Otherwise, please wait for a while and check again later via:
 
 ```bash
-python eval_client.py check 47.253.6.47 --server-port 8080
+python eval_client.py check --server-host 47.253.6.47 --server-port 8080
 ```
 
 for more details, please use the following commands:
@@ -68,8 +93,6 @@ python eval_client.py check --help
 python eval_client.py cancel --help
 python eval_client.py status --help
 ```
-
-We strongly suggest you first try `Test Subset of Tasks` in "Advanced Features" section to run a small subset of tasks to ensure the evaluation is working correctly.
 
 ---
 
@@ -194,7 +217,7 @@ python eval_client.py run \
 ### Check Server Status
 
 ```bash
-python eval_client.py check 47.253.6.47 --server-port 8080
+python eval_client.py check --server-host 47.253.6.47 --server-port 8080
 ```
 
 **Output (idle):**
@@ -225,7 +248,7 @@ tail -f ./results/server.log
 ### Check Task Status
 
 ```bash
-python eval_client.py status job_abc123def456 47.253.6.47 --server-port 8080
+python eval_client.py status --job-id job_abc123def456 --server-host 47.253.6.47 --server-port 8080
 ```
 
 **Possible statuses:**
@@ -238,7 +261,7 @@ python eval_client.py status job_abc123def456 47.253.6.47 --server-port 8080
 ### Cancel Running Task
 
 ```bash
-python eval_client.py cancel job_abc123def456 47.253.6.47 --server-port 8080
+python eval_client.py cancel job_abc123def456 --server-host 47.253.6.47 --server-port 8080
 ```
 
 **This will:**

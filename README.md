@@ -34,6 +34,11 @@ Toolathlon is a benchmark to assess language agents' general tool use in realist
 ### Using Our Public Evaluation Service 
 We provide Toolathlon evaluation as a service on public servers, where we have setup all the required MCP accounts and you don't need to worry about the setup -- you don't even need to install any MCP-related dependencies, evaluation can be ran by just communicating with our public server such as:
 ```bash
+# Quick running for one task:
+cat > debug_tasks.txt << EOF
+find-alita-paper
+EOF
+
 python eval_client.py run \
   --mode public \
   --base-url https://api.openai.com/v1 \
@@ -42,7 +47,10 @@ python eval_client.py run \
   --server-host 47.253.6.47 \
   --api-key sk-your-api-key \
   --workers 10 \
-  --server-port 8080
+  --server-port 8080 \
+  --ws-proxy-port 8081 \
+  --task-list-file ./debug_tasks.txt \
+  --skip-container-restart
 ```
 
 Please make sure to check [EVAL_SERVICE_README.md](EVAL_SERVICE_README.md) for more details (e.g. if you want to test your locally deployed models).
