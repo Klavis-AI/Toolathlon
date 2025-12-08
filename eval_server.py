@@ -8,7 +8,7 @@ Only one task can run at a time, with IP rate limiting (3 tasks per 24 hours).
 
 # Version control
 SERVER_VERSION = "1.1"
-SUPPORTED_CLIENT_VERSIONS = ["1.0", "1.1"]  # List of supported client versions
+SUPPORTED_CLIENT_VERSIONS = ["1.1"]  # List of supported client versions
 
 import asyncio
 import os
