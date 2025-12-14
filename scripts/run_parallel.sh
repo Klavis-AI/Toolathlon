@@ -24,7 +24,7 @@ WORKERS=${4:-10} # number of workers to use in parallel evaluation
 TIMEOUT="2400" # the timeout for each task execution, including pre-processing, agentloop and post-processing
 
 # model sampling related arguments
-TEMPERATURE="${SELF_TEMPERATURE:-0.6}"
+TEMPERATURE="0.6"
 echo "Using temperature ${TEMPERATURE} for agent model."
 TOP_P="1"
 MAX_TOKENS="8192"
@@ -40,10 +40,13 @@ TASK_LIST="${TASK_LIST:-}"
 # Generate temporary config file with random suffix to avoid conflicts
 RANDOM_SUFFIX=$(date +%s)_$$_$(shuf -i 1000-9999 -n 1)
 mkdir -p scripts/temp_configs
-TEMP_CONFIG="scripts/temp_configs/temp_parallel_config_${RANDOM_SUFFIX}.json"
-# the "user" field in the temp config is not used in toolathlon, but we have to put it here for compatibility
-cat > "$TEMP_CONFIG" <<EOF
-{
+CONFIG_FILE=${6:-"scripts/temp_configs/temp_parallel_config_${RANDOM_SUFFIX}.json"}
+
+# if CONFIG_FILE DOES NOT exist, we will generate it; otherwise we just use it as is
+if [ ! -f "$CONFIG_FILE" ]; then
+    # the "user" field in the temp config is not used in toolathlon, but we have to put it here for compatibility
+    cat > "$CONFIG_FILE" <<EOF
+    {
     "global_task_config":{
         "max_turns": 50,
         "max_steps_under_single_turn_mode": $MAX_STEPS,
@@ -82,9 +85,15 @@ cat > "$TEMP_CONFIG" <<EOF
     }
 }
 EOF
+    echo "Using generated temporary config file: $CONFIG_FILE"
+    cat $CONFIG_FILE
+else
+    echo "Using existing temporary config file: $CONFIG_FILE"
+    cat $CONFIG_FILE
+fi
 
 # Build command arguments
-ARGS="--tasks_folder $TASKS_FOLDER --tag $TAG --model_short_name $MODEL_NAME --provider $MODEL_PROVIDER --maxstep $MAX_STEPS --workers $WORKERS --timeout $TIMEOUT --dump_path $DUMP_PATH --eval_config $TEMP_CONFIG --image_name $IMAGE_NAME"
+ARGS="--tasks_folder $TASKS_FOLDER --tag $TAG --model_short_name $MODEL_NAME --provider $MODEL_PROVIDER --maxstep $MAX_STEPS --workers $WORKERS --timeout $TIMEOUT --dump_path $DUMP_PATH --eval_config $CONFIG_FILE --image_name $IMAGE_NAME"
 
 # Add optional task list if specified
 if [ ! -z "$TASK_LIST" ]; then
@@ -98,7 +107,7 @@ echo "🤖 Agent model: $MODEL_NAME ($MODEL_PROVIDER)"
 echo "🌡️  Temperature: $TEMPERATURE"
 echo "📁 Dump path: $DUMP_PATH"
 echo "🐳 Docker image: $IMAGE_NAME"
-echo "⚙️  Config file: $TEMP_CONFIG"
+echo "⚙️  Config file: $CONFIG_FILE"
 if [ ! -z "$TASK_LIST" ]; then
     echo "📋 Task list filter: $TASK_LIST"
 fi
@@ -134,7 +143,7 @@ echo "✅ Trajectory logs saved to: $DUMP_PATH/traj_log_all.jsonl"
 
 # 5. Generate enhanced statistics using separate script
 echo "📊 Generating enhanced statistics..."
-uv run scripts/generate_parallel_stats.py --dump_path "$DUMP_PATH" --tasks_folder "$TASKS_FOLDER" --temp_config "$TEMP_CONFIG" --task_list_file "${TASK_LIST:-all_tasks}"
+uv run scripts/generate_parallel_stats.py --dump_path "$DUMP_PATH" --tasks_folder "$TASKS_FOLDER" --temp_config "$CONFIG_FILE" --task_list_file "${TASK_LIST:-all_tasks}"
 
 echo ""
 echo "📊 Parallel evaluation completed with exit code: $EVAL_EXIT_CODE"
