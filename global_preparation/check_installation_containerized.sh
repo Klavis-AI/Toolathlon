@@ -213,14 +213,20 @@ else
     $CONTAINER_RUNTIME exec "$CONTAINER_NAME" bash -c "$copy_config_cmd"
 fi
 
-# Copy MCP auth directory if it exists
-if [ -d "$HOME/.mcp-auth" ]; then
-    echo " Copying MCP authentication data to container..."
+# Copy MCP auth directory if it exists (prefer ./configs/.mcp-auth over ~/.mcp-auth)
+if [ -d "$PROJECT_ROOT/configs/.mcp-auth" ]; then
+    echo " Copying MCP authentication data from ./configs/.mcp-auth to container..."
+    $CONTAINER_RUNTIME exec "$CONTAINER_NAME" mkdir -p /root/.mcp-auth
+    $CONTAINER_RUNTIME cp "$PROJECT_ROOT/configs/.mcp-auth/." "$CONTAINER_NAME:/root/.mcp-auth/"
+    echo "✓ MCP auth data copied from project configs"
+elif [ -d "$HOME/.mcp-auth" ]; then
+    echo " ./configs/.mcp-auth not found, falling back to ~/.mcp-auth..."
+    echo " Copying MCP authentication data from ~/.mcp-auth to container..."
     $CONTAINER_RUNTIME exec "$CONTAINER_NAME" mkdir -p /root/.mcp-auth
     $CONTAINER_RUNTIME cp "$HOME/.mcp-auth/." "$CONTAINER_NAME:/root/.mcp-auth/"
-    echo "✓ MCP auth data copied"
+    echo "✓ MCP auth data copied from home directory"
 else
-    echo " Warning: $HOME/.mcp-auth not found, skipping MCP auth copy"
+    echo " Warning: MCP auth not found in ./configs/.mcp-auth or ~/.mcp-auth, skipping MCP auth copy"
 fi
 
 # Step 2.7: Verify Kind environment

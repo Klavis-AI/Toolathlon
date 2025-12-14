@@ -146,7 +146,7 @@ def run_oauth_flow(oauth_keys_path='configs/gcp-oauth.keys.json',
             print(auth_url)
             print('='*80)
             print('Please open the URL above in a browser to authorize. You need to authorize all the requested permissions.')
-            print('Waiting for authorization...')
+            print('Waiting for authorization... If you have completed authorization but still stop at this message without proceeding, please revisit the URL above and try again.')
 
         # Auto-open browser
         if auto_open_browser:

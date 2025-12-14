@@ -8,5 +8,7 @@ params:
   args:
     - "mcp-remote"
     - "https://mcp.notion.com/mcp"
+  env:
+    MCP_REMOTE_CONFIG_DIR: "./configs/.mcp-auth"
 client_session_timeout_seconds: 100
 cache_tools_list: true

@@ -78,9 +78,9 @@ bash global_preparation/automated_additional_services.sh
 
 We recommand register a new notion account with your Toolathlon-specific gmail account and create a new workspace.
 
-First run `uv run -m global_preparation.special_setup_notion_official` to connect to the workspace in the above step to the official online notion mcp. This facilates us to duplicate and move pages more efficiently!
+First run `uv run -m global_preparation.special_setup_notion_official` to connect to the workspace in the above step to the official online notion mcp. This facilates us to duplicate and move pages more efficiently! This will create a `.mcp-auth` directory under `configs` to store the authentication state of the online notion mcp.
 
-*Note: If you connect to an incorrect workspace when executing this command, you can remove the `~/.mcp-auth` and rerun this command to reset the login state of this online notion mcp.
+*Note: If you connect to an incorrect workspace when executing this command, you can remove the `./configs/.mcp-auth` and rerun this command to reset the login state of this online notion mcp.
 
 <details>
 
