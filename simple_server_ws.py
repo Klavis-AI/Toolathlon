@@ -236,12 +236,18 @@ async def _handle_proxy_request(request: Request, request_data: dict, endpoint: 
         )
 
     # Add to pending queue with endpoint information
-    pending_requests[request_id] = {
+    # Only add _endpoint for non-default endpoints to maintain backward compatibility
+    req_dict = {
         "request_id": request_id,
         "pushed": False,
-        "_endpoint": endpoint,  # Add endpoint metadata
         **request_data
     }
+    # Only add _endpoint metadata if it's not the default /chat/completions
+    # This maintains backward compatibility with old clients
+    if endpoint != "/chat/completions":
+        req_dict["_endpoint"] = endpoint
+
+    pending_requests[request_id] = req_dict
 
     # Wait for response (maximum 10 minutes)
     for i in range(1200):  # 1200 * 0.5 = 600 秒
