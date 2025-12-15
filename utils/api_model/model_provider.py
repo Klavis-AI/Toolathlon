@@ -40,6 +40,7 @@ _HEADERS = {"User-Agent": _USER_AGENT}
 class ResponseOutputReasoningContent(BaseModel):
     reasoning_content: str | None
     pure_thinking_str: str | None
+    extra_contents_in_tool_calls: str | None
     """The reasoning content from the model."""
     type: Literal["reasoning_content"] = "reasoning_content"
 
@@ -72,6 +73,7 @@ class ConverterWithExplicitReasoningContent(Converter):
                 ResponseOutputRefusal(refusal=message.refusal, type="refusal")
             )
         
+        # for kimi, ds-reasoner, openrouter
         if hasattr(message, "reasoning_content") or hasattr(message, "reasoning_details"):
             # we assert they do not exist at the same time
             assert not (hasattr(message, "reasoning_content") and hasattr(message, "reasoning_details")), "WE DO NOT SUPPORT BOTH reasoning_content AND reasoning_details AT THE SAME TIME"
@@ -86,8 +88,18 @@ class ConverterWithExplicitReasoningContent(Converter):
                     if detail.get('type') == 'reasoning.text':
                         pure_thinking_str = detail.get('text')
                         break
-            message_item.content.append(ResponseOutputReasoningContent(reasoning_content=reasoning_content, pure_thinking_str=pure_thinking_str, type="reasoning_content"))
-
+            message_item.content.append(ResponseOutputReasoningContent(reasoning_content=reasoning_content, pure_thinking_str=pure_thinking_str, extra_contents_in_tool_calls=json.dumps(None), type="reasoning_content"))
+        # for gemini, the reasoning is in the **first** tool call, so we need to find it
+        elif hasattr(message, "tool_calls") and message.tool_calls:
+            extra_contents_in_tool_calls = []
+            for tool_call in message.tool_calls:
+                if hasattr(tool_call, "extra_content") and tool_call.extra_content:
+                    extra_contents_in_tool_calls.append(tool_call.extra_content)
+                else:
+                    extra_contents_in_tool_calls.append(None)
+            extra_contents_in_tool_calls = json.dumps(extra_contents_in_tool_calls)
+            message_item.content.append(ResponseOutputReasoningContent(reasoning_content=json.dumps(None), pure_thinking_str=None, extra_contents_in_tool_calls=extra_contents_in_tool_calls, type="reasoning_content"))
+        
         if message.audio:
             raise AgentsException("Audio is not currently supported")
 
@@ -239,6 +251,8 @@ class ConverterWithExplicitReasoningContent(Converter):
                         new_asst["reasoning_content"] = json.loads(c["reasoning_content"]) # the reasoning_content is always a json string
                         # we also fill back the reasoning_details to the message
                         new_asst["reasoning_details"] = json.loads(c["reasoning_content"])
+                        # deserialize the extra contents in the tool calls, they will be used later to fill back the extra content in the tool calls
+                        new_asst["extra_contents_in_tool_calls"] = json.loads(c["extra_contents_in_tool_calls"])
                     else:
                         raise UserError(f"Unknown content type in ExtendedResponseOutputMessage: {c}")
 
@@ -271,6 +285,8 @@ class ConverterWithExplicitReasoningContent(Converter):
 
             elif func_call := cls.maybe_function_tool_call(item):
                 asst = ensure_assistant_message()
+                # each time we enter this, we will pop one extra content in the tool calls
+                extra_contents_in_tool_calls = asst.get("extra_contents_in_tool_calls", [])
                 tool_calls = list(asst.get("tool_calls", []))
                 arguments = func_call["arguments"] if func_call["arguments"] else "{}"
                 new_tool_call = ChatCompletionMessageToolCallParam(
@@ -281,6 +297,12 @@ class ConverterWithExplicitReasoningContent(Converter):
                         "arguments": arguments,
                     },
                 )
+                if extra_contents_in_tool_calls is not None and len(extra_contents_in_tool_calls) > 0:
+                    # pop the first extra content in the tool calls
+                    # put them back to the tool_call
+                    extra_content = extra_contents_in_tool_calls.pop(0)
+                    if extra_content is not None:
+                        new_tool_call["extra_content"] = extra_content
                 tool_calls.append(new_tool_call)
                 asst["tool_calls"] = tool_calls
             # 5) function call output => tool message
@@ -643,6 +665,9 @@ class OpenAIChatCompletionsModelWithRetry(OpenAIChatCompletionsModel):
                                     break
                             if pure_thinking_str:
                                 print("\033[90mTHINKING: ", pure_thinking_str.strip(), "\033[0m")
+                            # a little bit ugly ...
+                            elif isinstance(content, ResponseOutputReasoningContent) and isinstance(json.loads(content.extra_contents_in_tool_calls), list) and any(json.loads(content.extra_contents_in_tool_calls)):
+                                print("\033[90mTHINKING: (Thinking implicitly ...) \033[0m")
                             # find text content in the output items
                             text_content = None
                             for content in item.content:
