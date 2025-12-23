@@ -23,6 +23,7 @@ app = FastAPI()
 # Global variables
 connected_client: Optional[WebSocket] = None  # Current connected Client
 connected_client_addr: Optional[str] = None  # Address of current connected client
+connected_client_job_id: Optional[str] = None  # Job ID of current connected client
 pending_requests: Dict[str, dict] = {}  # request_id -> request_data
 responses: Dict[str, dict] = {}  # request_id -> response_data
 cancelled_requests: set = set()  # Cancelled request ID blacklist
@@ -34,7 +35,7 @@ last_stats_time: float = 0  # Last time we printed statistics
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, job_id: str = None):
     """WebSocket connection endpoint (only one Client allowed, requires valid job_id)"""
-    global connected_client, connected_client_addr, rejected_connections
+    global connected_client, connected_client_addr, connected_client_job_id, rejected_connections
 
     await websocket.accept()
 
@@ -111,6 +112,7 @@ async def websocket_endpoint(websocket: WebSocket, job_id: str = None):
 
     connected_client = websocket
     connected_client_addr = client_addr
+    connected_client_job_id = job_id  # Save job_id for logging
     log(f"[Server] ✓ ACCEPT connection from {client_addr} (job_id: {job_id}) - now serving this client")
 
     # Create two tasks
@@ -163,6 +165,7 @@ async def websocket_endpoint(websocket: WebSocket, job_id: str = None):
         # Ensure cleanup (this will always execute)
         connected_client = None
         connected_client_addr = None
+        connected_client_job_id = None  # Clear job_id on disconnect
 
         # Cancel all possible running tasks
         for task in [task_handle_messages, task_push_requests]:
@@ -209,9 +212,9 @@ async def handle_client_messages(websocket: WebSocket):
                 responses[request_id] = response_data
 
                 if client_processing_time:
-                    log(f"[Server] 📥 RESPONSE received: {request_id} (status: {response_data.get('status_code')}, client time: {client_processing_time:.2f}s)")
+                    log(f"[Server] 📥 RESPONSE received from {connected_client_addr}: {request_id} (job: {connected_client_job_id}, status: {response_data.get('status_code')}, client time: {client_processing_time:.2f}s)")
                 else:
-                    log(f"[Server] 📥 RESPONSE received: {request_id} (status: {response_data.get('status_code')})")
+                    log(f"[Server] 📥 RESPONSE received from {connected_client_addr}: {request_id} (job: {connected_client_job_id}, status: {response_data.get('status_code')})")
 
             elif msg_type == "heartbeat":
                 # Heartbeat response, add send timeout protection
@@ -253,7 +256,7 @@ async def push_requests_to_client(websocket: WebSocket):
                 total_rejections = sum(rejected_connections.values())
 
                 if total_rejections > 0:
-                    log(f"[Server] 📊 STATUS: connected_client={connected_client_addr or 'None'}, "
+                    log(f"[Server] 📊 STATUS: connected_client={connected_client_addr or 'None'}, job={connected_client_job_id or 'N/A'}, "
                         f"pending={len(pending_requests)}, responses={len(responses)}, "
                         f"rejected_in_60s={total_rejections} from {num_rejected_ips} IPs")
 
@@ -266,7 +269,7 @@ async def push_requests_to_client(websocket: WebSocket):
                     # Clear rejection counters after reporting
                     rejected_connections.clear()
                 else:
-                    log(f"[Server] 📊 STATUS: connected_client={connected_client_addr or 'None'}, "
+                    log(f"[Server] 📊 STATUS: connected_client={connected_client_addr or 'None'}, job={connected_client_job_id or 'N/A'}, "
                         f"pending={len(pending_requests)}, responses={len(responses)}")
 
                 last_stats_time = current_time
@@ -296,7 +299,7 @@ async def push_requests_to_client(websocket: WebSocket):
                 # Calculate average queue time for this batch
                 avg_queue_time = sum(r.get("_queue_time", 0) for r in requests_to_send) / len(requests_to_send)
 
-                log(f"[Server] 📤 PUSH to client: {len(requests_to_send)} request(s) {batch} (avg queue time: {avg_queue_time:.3f}s)")
+                log(f"[Server] 📤 PUSH to client {connected_client_addr}: {len(requests_to_send)} request(s) {batch} (job: {connected_client_job_id}, avg queue time: {avg_queue_time:.3f}s)")
 
                 # Add send timeout protection (10 seconds)
                 try:
@@ -341,7 +344,7 @@ async def _handle_proxy_request(request: Request, request_data: dict, endpoint: 
     model_name = request_data.get("model", "unknown")
     caller_ip = request.client.host if request.client else "unknown"
 
-    log(f"[Server] 📨 NEW REQUEST: {request_id} (endpoint: {endpoint}, model: {model_name}, caller: {caller_ip})")
+    log(f"[Server] 📨 NEW REQUEST: {request_id} (job: {connected_client_job_id or 'N/A'}, endpoint: {endpoint}, model: {model_name}, from container: {caller_ip}, will push to: {connected_client_addr or 'no client'})")
 
     # Check if there is a Client connected
     if connected_client is None:
@@ -391,7 +394,7 @@ async def _handle_proxy_request(request: Request, request_data: dict, endpoint: 
 
             total_latency = time.time() - request_start_time
 
-            log(f"[Server] ✓ DELIVERED to caller: {request_id} (status: {resp_data.get('status_code')}, latency: {total_latency:.2f}s)")
+            log(f"[Server] ✓ DELIVERED to container {caller_ip}: {request_id} (job: {connected_client_job_id or 'N/A'}, status: {resp_data.get('status_code')}, total latency: {total_latency:.2f}s, from client: {connected_client_addr or 'unknown'})")
 
             return JSONResponse(
                 content=resp_data["body"],
@@ -432,6 +435,7 @@ async def root():
         "status": "running",
         "client_connected": connected_client is not None,
         "connected_client_address": connected_client_addr,
+        "connected_job_id": connected_client_job_id,
         "pending_requests": len(pending_requests),
         "pending_responses": len(responses),
         "cancelled_requests": len(cancelled_requests)
