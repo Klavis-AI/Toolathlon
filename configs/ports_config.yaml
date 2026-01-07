@@ -14,7 +14,7 @@ port_mappings:
   10005: 11005
   2525: 3525
   1143: 2143
-  2587: 3587
+  1587: 2587
   10003: 11003
   30123: 31123
   30124: 31124
@@ -71,10 +71,53 @@ files_by_port:
     files:
     - deployment/poste/scripts/setup.sh
     - global_preparation/deploy_containers.sh
-  2587:
+  1587:
     comment: SMTP submission port
     files:
+    - configs/example_email_config.json
+    - deployment/poste/scripts/setup.sh
     - global_preparation/deploy_containers.sh
+    - tasks/finalpool/apply-phd-email/email_config.json
+    - tasks/finalpool/apply-phd-email/files/receiver_config.json
+    - tasks/finalpool/canvas-arrange-exam/emails_config.json
+    - tasks/finalpool/canvas-art-manager/email_config.json
+    - tasks/finalpool/canvas-homework-grader-python/email_config.json
+    - tasks/finalpool/course-assistant/emails_all_config.json
+    - tasks/finalpool/course-assistant/emails_config.json
+    - tasks/finalpool/course-assistant/preprocess/send_email.py
+    - tasks/finalpool/email-paper-homepage/emails_config.json
+    - tasks/finalpool/filter-low-selling-products/emails_config.json
+    - tasks/finalpool/git-bug-hunt/emails_config.json
+    - tasks/finalpool/git-bug-hunt/files/receiver_config.json
+    - tasks/finalpool/k8s-deployment-cleanup/emails_config.json
+    - tasks/finalpool/k8s-deployment-cleanup/files/involved_emails.json
+    - tasks/finalpool/landing-task-reminder/emails_config.json
+    - tasks/finalpool/landing-task-reminder/groundtruth_workspace/involved_emails.json
+    - tasks/finalpool/live-transactions/preprocess/live_transactions_dataset.json
+    - tasks/finalpool/meeting-assign/email_config.json
+    - tasks/finalpool/meeting-assign/preprocess/clean_local_emails.py
+    - tasks/finalpool/meeting-assign/preprocess/main.py
+    - tasks/finalpool/meeting-assign/receiver_config.json
+    - tasks/finalpool/notion-find-job/emails_config.json
+    - tasks/finalpool/notion-find-job/preprocess/clean_local_emails.py
+    - tasks/finalpool/notion-find-job/preprocess/main.py
+    - tasks/finalpool/notion-hr/emails_config.json
+    - tasks/finalpool/notion-hr/files/involved_emails.json
+    - tasks/finalpool/notion-hr/preprocess/main.py
+    - tasks/finalpool/payable-invoice-checker/email_config.json
+    - tasks/finalpool/payable-invoice-checker/files/involved_emails.json
+    - tasks/finalpool/set-conf-cr-ddl/email_config.json
+    - tasks/finalpool/sla-timeout-monitor/email_config.json
+    - tasks/finalpool/sla-timeout-monitor/files/involved_emails.json
+    - tasks/finalpool/student-interview/email_config.json
+    - tasks/finalpool/travel-expense-reimbursement/email_config.json
+    - tasks/finalpool/travel-expense-reimbursement/files/involved_emails.json
+    - tasks/finalpool/verl-dataset/groundtruth_workspace/deepscaler.json
+    - tasks/finalpool/woocommerce-customer-survey/email_config.json
+    - tasks/finalpool/woocommerce-new-product/emails_config.json
+    - tasks/finalpool/woocommerce-new-welcome/emails_config.json
+    - tasks/finalpool/woocommerce-product-recall/email_config.json
+    - tasks/finalpool/woocommerce-stock-alert/emails_config.json
   10001:
     comment: Canvas HTTP port
     files:
