@@ -288,7 +288,22 @@ def restore_all_ports(project_root: Path, config_path: str = 'configs/ports_conf
             status = "[DRY RUN] Would restore" if dry_run else "Restored"
             print(f"   ✓ {status}: {file_rel_path} ({file_replacement_count} replacements)")
     
-    # Step 5: Delete all change log files
+    # Summary
+    print()
+    print("=" * 70)
+    print(f"{'[DRY RUN] ' if dry_run else ''}Summary:")
+    print(f"   Files restored: {total_files_restored}")
+    print(f"   Total replacements: {total_replacements}")
+    
+    # Check for errors BEFORE deleting change logs
+    if errors:
+        print(f"\n⚠ Errors encountered ({len(errors)}):")
+        for error in errors:
+            print(f"   ✗ {error}")
+        print("\n⚠ Change logs NOT deleted due to errors. You can retry restoration.")
+        return False
+    
+    # Step 5: Delete all change log files (only if no errors)
     if not dry_run and changes_files:
         print(f"\n🗑️ Removing change logs...")
         for changes_file in changes_files:
@@ -297,19 +312,6 @@ def restore_all_ports(project_root: Path, config_path: str = 'configs/ports_conf
                 print(f"   ✓ Removed: {changes_file.name}")
             except Exception as e:
                 print(f"   ⚠ Could not remove {changes_file.name}: {e}")
-    
-    # Summary
-    print()
-    print("=" * 70)
-    print(f"{'[DRY RUN] ' if dry_run else ''}Summary:")
-    print(f"   Files restored: {total_files_restored}")
-    print(f"   Total replacements: {total_replacements}")
-    
-    if errors:
-        print(f"\n⚠ Errors encountered ({len(errors)}):")
-        for error in errors:
-            print(f"   ✗ {error}")
-        return False
     
     if total_files_restored > 0 or changes_files:
         print("\n✓ All ports restored to default values")

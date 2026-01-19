@@ -308,6 +308,11 @@ class PortReplacer:
         print("Restoring original port numbers...")
         print()
 
+        # For git restore, we don't need a specific changes log file
+        if use_git:
+            return self._restore_with_git()
+
+        # For reverse replacement, we need the changes log
         if not self.changes_log_path.exists():
             print(f"Error: Changes log not found: {self.changes_log_path}")
             print("\nAvailable options:")
@@ -325,10 +330,7 @@ class PortReplacer:
         print(f"Number of changes: {len(log_data.get('changes', []))}")
         print()
 
-        if use_git:
-            return self._restore_with_git()
-        else:
-            return self._restore_with_reverse_replacement(log_data)
+        return self._restore_with_reverse_replacement(log_data)
 
     def _restore_with_reverse_replacement(self, log_data: Dict) -> bool:
         """Restore original port numbers by performing reverse replacement."""
@@ -468,9 +470,16 @@ class PortReplacer:
             if result.returncode == 0:
                 print("✓ Successfully restored files")
 
-                if self.changes_log_path.exists():
-                    self.changes_log_path.unlink()
-                    print(f"✓ Removed changes log: {self.changes_log_path}")
+                # Remove ALL change log files (not just self.changes_log_path)
+                changes_logs = list(self.project_root.glob("port_changes*.json"))
+                if changes_logs:
+                    print("\n🗑️ Removing change logs...")
+                    for log_file in changes_logs:
+                        try:
+                            log_file.unlink()
+                            print(f"   ✓ Removed: {log_file.name}")
+                        except Exception as e:
+                            print(f"   ⚠ Could not remove {log_file.name}: {e}")
 
                 return True
             else:
