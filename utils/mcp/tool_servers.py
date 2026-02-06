@@ -4,7 +4,7 @@ import os
 import yaml
 from pathlib import Path
 
-from agents.mcp import MCPServerStdio, MCPServerSse
+from agents.mcp import MCPServerStdio, MCPServerSse, MCPServerStreamableHttp
 from configs.global_configs import global_configs
 from configs.token_key_session import all_token_key_session
 
@@ -23,19 +23,25 @@ class MCPServerManager:
                  agent_workspace: str, 
                  config_dir: str = "configs/mcp_servers",
                  debug: bool = False,
-                 local_token_key_session: Dict = None):
+                 local_token_key_session: Dict = None,
+                 server_url_overrides: Optional[Dict[str, str]] = None):
         """
         Initialize MCP server manager
         
         Args:
             agent_workspace: Agent workspace path
             config_dir: Configuration file directory path
+            debug: Enable debug output
+            local_token_key_session: Task-specific token overrides
+            server_url_overrides: Optional dict mapping server_name -> streamable-http URL.
+                                  Servers with overrides use remote MCPServerStreamableHttp
+                                  instead of local config.
         """
         self.local_servers_paths = os.path.abspath("./local_servers")
         self.local_binary_paths = os.path.abspath("./local_binary")
         self.agent_workspace = os.path.abspath(agent_workspace)
-        self.servers: Dict[str, Union[MCPServerStdio, MCPServerSse]] = {}
-        self.connected_servers: Dict[str, Union[MCPServerStdio, MCPServerSse]] = {}
+        self.servers: Dict[str, Union[MCPServerStdio, MCPServerSse, MCPServerStreamableHttp]] = {}
+        self.connected_servers: Dict[str, Union[MCPServerStdio, MCPServerSse, MCPServerStreamableHttp]] = {}
         self.debug = debug
         self.local_token_key_session = local_token_key_session
         self._lock = asyncio.Lock()
@@ -46,6 +52,18 @@ class MCPServerManager:
         
         # Load servers from configuration files
         self._load_servers_from_configs(config_dir)
+
+        # Apply Klavis sandbox overrides (replace local configs with remote URLs)
+        if server_url_overrides:
+            for name, url in server_url_overrides.items():
+                self.servers[name] = MCPServerStreamableHttp(
+                    params={"url": url},
+                    name=name,
+                    cache_tools_list=True,
+                    client_session_timeout_seconds=100,
+                )
+                if self.debug:
+                    print(f"  - Overrode server '{name}' with remote URL: {url}")
 
     def _load_servers_from_configs(self, config_dir: str):
         """Load servers from configuration file directory"""
@@ -95,6 +113,8 @@ class MCPServerManager:
             server = MCPServerStdio(**kwargs)
         elif server_type == 'sse':
             server = MCPServerSse(**kwargs)
+        elif server_type == 'streamable_http':
+            server = MCPServerStreamableHttp(**kwargs)
         else:
             raise ValueError(f"Unsupported server type: {server_type}")
         
@@ -160,7 +180,7 @@ class MCPServerManager:
         
         return replace_templates(params)
 
-    async def _manage_server_lifecycle(self, name: str, server: Union[MCPServerStdio, MCPServerSse], 
+    async def _manage_server_lifecycle(self, name: str, server: Union[MCPServerStdio, MCPServerSse, MCPServerStreamableHttp], 
                                        max_connect_retries: int = 3, connect_retry_delay: float = 2.0):
         """Manage the full lifecycle of a server in a single task"""
         event = self._connection_events.get(name)
@@ -418,7 +438,7 @@ class MCPServerManager:
         self.connected_servers.clear()
         self._connection_events.clear()
 
-    def get_all_connected_servers(self) -> List[Union[MCPServerStdio, MCPServerSse]]:
+    def get_all_connected_servers(self) -> List[Union[MCPServerStdio, MCPServerSse, MCPServerStreamableHttp]]:
         """Get all connected server instances"""
         return list(self.connected_servers.values())
 

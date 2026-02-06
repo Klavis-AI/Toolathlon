@@ -397,11 +397,28 @@ class TaskAgent:
         if self.debug:
             print_color("\n=== Starting to setup MCP servers ===", "blue")
 
+        # If KLAVIS_API_KEY is set, acquire MCP sandboxes with remote MCP servers
+        server_url_overrides = None
+        klavis_api_key = os.environ.get("KLAVIS_API_KEY")
+        if klavis_api_key and self.task_config.needed_mcp_servers:
+            from utils.klavis_sandbox import KlavisSandbox
+            try:
+                sandbox_client = KlavisSandbox(api_key=klavis_api_key)
+                server_url_overrides = sandbox_client.acquire_for_servers(
+                    self.task_config.needed_mcp_servers, # TODO: write a mapping for Toolathlon server names to Klavis server name
+                    self.task_config.task_dir,
+                )
+                if server_url_overrides and self.debug:
+                    print_color(f"[Klavis] Using remote sandboxes for: {list(server_url_overrides.keys())}", "blue")
+            except Exception as e:
+                print_color(f"[Klavis] Sandbox acquisition failed, falling back to local: {e}", "yellow")
+
         self.mcp_manager = MCPServerManager(
             agent_workspace=self.task_config.agent_workspace,
             config_dir=self.mcp_config.server_config_path,
             debug=self.debug,
-            local_token_key_session=local_token_key_session
+            local_token_key_session=local_token_key_session,
+            server_url_overrides=server_url_overrides,
         )
         await self.mcp_manager.connect_servers(self.task_config.needed_mcp_servers)
     
