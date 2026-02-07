@@ -406,7 +406,6 @@ class TaskAgent:
                 self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
                 server_url_overrides = self._klavis_client.acquire_for_servers(
                     self.task_config.needed_mcp_servers, # TODO: write a mapping for Toolathlon server names to Klavis server name
-                    self.task_config.task_dir,
                 )
                 if server_url_overrides and self.debug:
                     print_color(f"[Klavis] Using remote sandboxes for: {list(server_url_overrides.keys())}", "blue")

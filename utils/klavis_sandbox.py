@@ -15,18 +15,11 @@ class KlavisSandbox:
             raise ValueError("KLAVIS_API_KEY is required")
         self.acquired_sandboxes: List[Dict] = []
 
-    @staticmethod
-    def _task_dir_to_task_name(task_dir: str) -> str:
-        """Convert task_dir like 'finalpool/notion-personal-website' to Klavis task_name."""
-        task_name = task_dir.split("/")[-1].replace("-", "_")
-        return f"Toolathlon_{task_name}"
-
-    def acquire(self, server_name: str, task_dir: str) -> Optional[Dict]:
-        """Acquire a sandbox for a given MCP server and task.
+    def acquire(self, server_name: str) -> Optional[Dict]:
+        """Acquire a sandbox for a given MCP server.
         
         Returns response dict with sandbox_id, server_urls, etc. or None on failure.
         """
-        # task_name = self._task_dir_to_task_name(task_dir) 
         url = f"{KLAVIS_API_BASE}/sandbox/{server_name}"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -42,7 +35,7 @@ class KlavisSandbox:
             print(f"[Klavis] Failed to acquire sandbox for '{server_name}': {e}")
             return None
 
-    def acquire_for_servers(self, server_names: List[str], task_dir: str) -> Dict[str, str]:
+    def acquire_for_servers(self, server_names: List[str]) -> Dict[str, str]:
         """Acquire sandboxes for multiple servers.
         
         Returns a dict mapping server_name -> streamable-http URL for servers
@@ -50,7 +43,7 @@ class KlavisSandbox:
         """
         overrides = {}
         for name in server_names:
-            result = self.acquire(name, task_dir)
+            result = self.acquire(name)
             if result and result.get("server_urls"):
                 for sname, surl in result["server_urls"].items(): # local_dev sandbox might have multiple servers
                     overrides[sname] = surl
