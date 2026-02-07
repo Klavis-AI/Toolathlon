@@ -403,8 +403,8 @@ class TaskAgent:
         if klavis_api_key and self.task_config.needed_mcp_servers:
             from utils.klavis_sandbox import KlavisSandbox
             try:
-                sandbox_client = KlavisSandbox(api_key=klavis_api_key)
-                server_url_overrides = sandbox_client.acquire_for_servers(
+                self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
+                server_url_overrides = self._klavis_client.acquire_for_servers(
                     self.task_config.needed_mcp_servers, # TODO: write a mapping for Toolathlon server names to Klavis server name
                     self.task_config.task_dir,
                 )
@@ -867,6 +867,8 @@ class TaskAgent:
         """Release resources and disconnect MCP servers."""
         if self.mcp_manager:
             await self.mcp_manager.disconnect_servers()
+        if getattr(self, '_klavis_client', None):
+            self._klavis_client.release_all()
     
     async def run(self) -> TaskStatus:
         """Run the whole task, including initialization, main loop, and saving results."""

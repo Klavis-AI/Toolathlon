@@ -56,3 +56,22 @@ class KlavisSandbox:
                     overrides[sname] = surl
                     print(f"[Klavis] Acquired sandbox for '{sname}': {surl}")
         return overrides
+
+    def release_all(self):
+        """Release all acquired sandboxes."""
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        for sb in self.acquired_sandboxes:
+            sandbox_id = sb.get("sandbox_id")
+            server_name = sb.get("server_name")
+            if not sandbox_id or not server_name:
+                continue
+            try:
+                resp = httpx.delete(
+                    f"{KLAVIS_API_BASE}/sandbox/{server_name}/{sandbox_id}",
+                    headers=headers, timeout=30,
+                )
+                resp.raise_for_status()
+                print(f"[Klavis] Released sandbox '{sandbox_id}' for '{server_name}'")
+            except Exception as e:
+                print(f"[Klavis] Failed to release sandbox '{sandbox_id}': {e}")
+        self.acquired_sandboxes.clear()
