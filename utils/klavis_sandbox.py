@@ -26,7 +26,7 @@ class KlavisSandbox:
             "Content-Type": "application/json",
         }
         try:
-            resp = httpx.post(url, json={"benchmark": "MCP_Atlas"}, headers=headers, timeout=60) # TODO: change based on API change
+            resp = httpx.post(url, json={"benchmark": "Toolathlon"}, headers=headers, timeout=60)
             resp.raise_for_status()
             data = resp.json()
             self.acquired_sandboxes.append(data)
