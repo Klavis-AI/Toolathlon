@@ -413,18 +413,9 @@ class TaskAgent:
 
         # Export server URLs as env var so preprocess/eval subprocesses can read them
         if self._server_url_overrides:
-            os.environ["TOOLATHLON_MCP_SERVER_URLS"] = json.dumps(self._server_url_overrides)
+            os.environ["KLAVIS_MCP_SERVER_URLS"] = json.dumps(self._server_url_overrides)
             if self.debug:
-                print_color(f"[Klavis] Exported TOOLATHLON_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
-
-        # Export local_dev sandbox_id so task-specific preprocess/eval scripts can upload/download files
-        if getattr(self, '_klavis_client', None):
-            for sb in self._klavis_client.acquired_sandboxes:
-                if sb.get("server_name") == "local_dev":
-                    os.environ["TOOLATHLON_LOCAL_DEV_SANDBOX_ID"] = sb["sandbox_id"]
-                    if self.debug:
-                        print_color(f"[Klavis] Exported TOOLATHLON_LOCAL_DEV_SANDBOX_ID={sb['sandbox_id']}", "blue")
-                    break
+                print_color(f"[Klavis] Exported KLAVIS_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
 
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""
