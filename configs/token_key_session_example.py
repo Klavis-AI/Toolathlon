@@ -63,7 +63,7 @@ all_token_key_session = Dict(
     wandb_api_key = "XX", # TO BE FILLED
 
     #### Notion
-    # keys can be loaded from env vars (e.g. from Klavis Sandbox)
+    # keys can be loaded from env vars (e.g. from Klavis Sandbox) for subprocesses (for Notion, it will clean up the old page and duplicate a new empty one for the task)
     notion_integration_key = os.environ.get("KLAVIS_NOTION_INTEGRATION_KEY", "XX"),
     notion_integration_key_eval = os.environ.get("KLAVIS_NOTION_INTEGRATION_KEY_EVAL", "XX"),
     source_notion_page_url = os.environ.get("KLAVIS_SOURCE_NOTION_PAGE_URL", "XX"),

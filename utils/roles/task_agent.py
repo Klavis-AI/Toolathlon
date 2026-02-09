@@ -51,7 +51,6 @@ from utils.aux_tools.overlong_tool_manager import overlong_tool_tools
 
 from utils.general.helper import print_color
 from utils.status_manager import TaskStatusManager
-from configs.token_key_session import all_token_key_session
 
 local_tool_mappings = {
     "ai_webpage_summary": tool_ai_webpage_summary,
@@ -418,7 +417,6 @@ class TaskAgent:
             if self.debug:
                 print_color(f"[Klavis] Exported KLAVIS_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
 
-        # Fetch Notion sandbox details and update config
         if getattr(self, '_klavis_client', None):
             for sb in self._klavis_client.acquired_sandboxes:
                 if sb.get("server_name") == "notion":                    
@@ -427,27 +425,14 @@ class TaskAgent:
                         details = self._klavis_client.get_sandbox_details("notion", sb["sandbox_id"])
                         if details and "metadata" in details:
                             meta = details["metadata"]
-                            updates = {
-                                "notion_integration_key": meta.get("toolathon_notion_integration_key"),
-                                "notion_integration_key_eval": meta.get("toolathon_notion_integration_key_eval"),
-                                "source_notion_page_url": meta.get("toolathon_source_notion_page_url"),
-                                "eval_notion_page_url": meta.get("toolathon_eval_notion_page_url"),
-                            }
-                            updates = {k: v for k, v in updates.items() if v}
                             
-                            # Update environment variables for subprocesses
-                            if "notion_integration_key" in updates:
-                                os.environ["KLAVIS_NOTION_INTEGRATION_KEY"] = updates["notion_integration_key"]
-                            if "notion_integration_key_eval" in updates:
-                                os.environ["KLAVIS_NOTION_INTEGRATION_KEY_EVAL"] = updates["notion_integration_key_eval"]
-                            if "source_notion_page_url" in updates:
-                                os.environ["KLAVIS_SOURCE_NOTION_PAGE_URL"] = updates["source_notion_page_url"]
-                            if "eval_notion_page_url" in updates:
-                                os.environ["KLAVIS_EVAL_NOTION_PAGE_URL"] = updates["eval_notion_page_url"]
-
-                            all_token_key_session.update(updates)
+                            ## subprocesses will read these env vars to do workspace initialization (for Notion, it will clean up the old page and duplicate a new empty one for the task)
+                            os.environ["KLAVIS_NOTION_INTEGRATION_KEY"] = meta.get("toolathon_notion_integration_key")
+                            os.environ["KLAVIS_NOTION_INTEGRATION_KEY_EVAL"] = meta.get("toolathon_notion_integration_key_eval")
+                            os.environ["KLAVIS_SOURCE_NOTION_PAGE_URL"] = meta.get("toolathon_source_notion_page_url")
+                            os.environ["KLAVIS_EVAL_NOTION_PAGE_URL"] = meta.get("toolathon_eval_notion_page_url")
                             if self.debug:
-                                print_color(f"[Klavis] Sandbox config updated: {list(updates.keys())}", "blue")
+                                print_color(f"[Klavis] Sandbox config updated: {list(os.environ.keys())}", "blue")
                     except Exception as e:
                         print_color(f"[Klavis] Failed to update config from sandbox details: {e}", "red")
 
