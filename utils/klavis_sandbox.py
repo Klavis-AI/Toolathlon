@@ -50,6 +50,18 @@ class KlavisSandbox:
                     print(f"[Klavis] Acquired sandbox for '{sname}': {surl}")
         return overrides
 
+    def get_sandbox_details(self, server_name: str, sandbox_id: str) -> Optional[Dict]:
+        """Get detailed information about a specific sandbox instance."""
+        url = f"{KLAVIS_API_BASE}/sandbox/{server_name}/{sandbox_id}"
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        try:
+            resp = httpx.get(url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            print(f"[Klavis] Failed to get sandbox details for '{sandbox_id}': {e}")
+            return None
+
     def release_all(self):
         """Release all acquired sandboxes."""
         headers = {"Authorization": f"Bearer {self.api_key}"}

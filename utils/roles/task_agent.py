@@ -417,6 +417,27 @@ class TaskAgent:
             if self.debug:
                 print_color(f"[Klavis] Exported KLAVIS_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
 
+        if getattr(self, '_klavis_client', None):
+            for sb in self._klavis_client.acquired_sandboxes:
+                if sb.get("server_name") == "notion":                    
+                    # Fetch details and update config
+                    try:
+                        details = self._klavis_client.get_sandbox_details("notion", sb["sandbox_id"])
+                        if details and "metadata" in details:
+                            meta = details["metadata"]
+                            
+                            ## these configs only use for task process: subprocesses will read these env vars to do workspace initialization (for Notion, it will clean up the old page and duplicate a new empty one for the task)
+                            os.environ["KLAVIS_NOTION_INTEGRATION_KEY"] = meta.get("toolathon_notion_integration_key")
+                            os.environ["KLAVIS_NOTION_INTEGRATION_KEY_EVAL"] = meta.get("toolathon_notion_integration_key_eval")
+                            os.environ["KLAVIS_SOURCE_NOTION_PAGE_URL"] = meta.get("toolathon_source_notion_page_url")
+                            os.environ["KLAVIS_EVAL_NOTION_PAGE_URL"] = meta.get("toolathon_eval_notion_page_url")
+                            if self.debug:
+                                print_color(f"[Klavis] Sandbox config updated: {list(os.environ.keys())}", "blue")
+                    except Exception as e:
+                        print_color(f"[Klavis] Failed to update config from sandbox details: {e}", "red")
+
+                    break
+
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""
 
