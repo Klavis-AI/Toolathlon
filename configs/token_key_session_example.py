@@ -63,10 +63,12 @@ all_token_key_session = Dict(
     wandb_api_key = "XX", # TO BE FILLED
 
     #### Notion
-    notion_integration_key="XX", # TO BE FILLED
-    notion_integration_key_eval = "XX", # TO BE FILLED
-    source_notion_page_url="XX", # TO BE FILLED
-    eval_notion_page_url="XX", # TO BE FILLED
+    # keys can be loaded from env vars (e.g. from Klavis Sandbox)
+    notion_integration_key = os.environ.get("KLAVIS_NOTION_INTEGRATION_KEY", "XX"),
+    notion_integration_key_eval = os.environ.get("KLAVIS_NOTION_INTEGRATION_KEY_EVAL", "XX"),
+    source_notion_page_url = os.environ.get("KLAVIS_SOURCE_NOTION_PAGE_URL", "XX"),
+    eval_notion_page_url = os.environ.get("KLAVIS_EVAL_NOTION_PAGE_URL", "XX"),
+
     # notion_allowed_page_ids="XX", # KEEP_IT_ASIS_CUZ_IT_WILL_BE_RESET_IN_TASK_SPECIFIC_DIR
 
     #### SnowFlake
