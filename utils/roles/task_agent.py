@@ -391,33 +391,53 @@ class TaskAgent:
         self._debug_print(f"Successfully initialize workspace for {self.task_config.id}!")
         return True
 
+    async def acquire_klavis_sandboxes(self) -> None:
+        """Acquire Klavis remote MCP sandboxes if KLAVIS_API_KEY is set.
+        
+        Must be called before preprocess so that server URLs are available
+        to preprocess/eval scripts via the TOOLATHLON_MCP_SERVER_URLS env var.
+        """
+        self._server_url_overrides = None
+        klavis_api_key = os.environ.get("KLAVIS_API_KEY")
+        if klavis_api_key and self.task_config.needed_mcp_servers:
+            from utils.klavis_sandbox import KlavisSandbox
+            try:
+                self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
+                self._server_url_overrides = self._klavis_client.acquire_for_servers(
+                    self.task_config.needed_mcp_servers,
+                )
+                if self._server_url_overrides and self.debug:
+                    print_color(f"[Klavis] Using remote sandboxes for: {list(self._server_url_overrides.keys())}", "blue")
+            except Exception as e:
+                print_color(f"[Klavis] Sandbox acquisition failed, falling back to local: {e}", "yellow")
+
+        # Export server URLs as env var so preprocess/eval subprocesses can read them
+        if self._server_url_overrides:
+            os.environ["TOOLATHLON_MCP_SERVER_URLS"] = json.dumps(self._server_url_overrides)
+            if self.debug:
+                print_color(f"[Klavis] Exported TOOLATHLON_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
+
+        # Export local_dev sandbox_id so task-specific preprocess/eval scripts can upload/download files
+        if getattr(self, '_klavis_client', None):
+            for sb in self._klavis_client.acquired_sandboxes:
+                if sb.get("server_name") == "local_dev":
+                    os.environ["TOOLATHLON_LOCAL_DEV_SANDBOX_ID"] = sb["sandbox_id"]
+                    if self.debug:
+                        print_color(f"[Klavis] Exported TOOLATHLON_LOCAL_DEV_SANDBOX_ID={sb['sandbox_id']}", "blue")
+                    break
+
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""
 
         if self.debug:
             print_color("\n=== Starting to setup MCP servers ===", "blue")
 
-        # If KLAVIS_API_KEY is set, acquire MCP sandboxes with remote MCP servers
-        server_url_overrides = None
-        klavis_api_key = os.environ.get("KLAVIS_API_KEY")
-        if klavis_api_key and self.task_config.needed_mcp_servers:
-            from utils.klavis_sandbox import KlavisSandbox
-            try:
-                self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
-                server_url_overrides = self._klavis_client.acquire_for_servers(
-                    self.task_config.needed_mcp_servers, # TODO: write a mapping for Toolathlon server names to Klavis server name
-                )
-                if server_url_overrides and self.debug:
-                    print_color(f"[Klavis] Using remote sandboxes for: {list(server_url_overrides.keys())}", "blue")
-            except Exception as e:
-                print_color(f"[Klavis] Sandbox acquisition failed, falling back to local: {e}", "yellow")
-
         self.mcp_manager = MCPServerManager(
             agent_workspace=self.task_config.agent_workspace,
             config_dir=self.mcp_config.server_config_path,
             debug=self.debug,
             local_token_key_session=local_token_key_session,
-            server_url_overrides=server_url_overrides,
+            server_url_overrides=self._server_url_overrides,
         )
         await self.mcp_manager.connect_servers(self.task_config.needed_mcp_servers)
     
@@ -880,6 +900,9 @@ class TaskAgent:
             self.task_config.log_file = os.path.join(self.task_config.task_root, "traj_log.json")
             self.task_config.agent_workspace = os.path.join(self.task_config.task_root, "workspace")
 
+            # Acquire Klavis sandboxes early so URLs are available to preprocess/eval
+            await self.acquire_klavis_sandboxes()
+
             # Preprocess status
             self.status_manager.update_preprocess("running")
 
@@ -915,7 +938,7 @@ class TaskAgent:
             # Switch back to the original cwd
             os.chdir(current_dir)
             self._debug_print(f"Switched back working directory to {current_dir}")
-            
+
             # If not interrupted or max turns reached, mark done
             if self.task_status not in [TaskStatus.MAX_TURNS_REACHED, TaskStatus.INTERRUPTED]:
                 self.task_status = TaskStatus.SUCCESS
