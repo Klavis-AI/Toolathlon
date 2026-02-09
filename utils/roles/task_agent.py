@@ -426,7 +426,7 @@ class TaskAgent:
                         if details and "metadata" in details:
                             meta = details["metadata"]
                             
-                            ## subprocesses will read these env vars to do workspace initialization (for Notion, it will clean up the old page and duplicate a new empty one for the task)
+                            ## these configs only use for task process: subprocesses will read these env vars to do workspace initialization (for Notion, it will clean up the old page and duplicate a new empty one for the task)
                             os.environ["KLAVIS_NOTION_INTEGRATION_KEY"] = meta.get("toolathon_notion_integration_key")
                             os.environ["KLAVIS_NOTION_INTEGRATION_KEY_EVAL"] = meta.get("toolathon_notion_integration_key_eval")
                             os.environ["KLAVIS_SOURCE_NOTION_PAGE_URL"] = meta.get("toolathon_source_notion_page_url")

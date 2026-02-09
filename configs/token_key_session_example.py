@@ -63,7 +63,7 @@ all_token_key_session = Dict(
     wandb_api_key = "XX", # TO BE FILLED
 
     #### Notion
-    # Klavis Node: The first load will not have these keys as we haven't acquired the sandbox yet. but later for task subprocesses, it will be set up.
+    # Klavis note: The first load will not have these keys as we haven't acquired the sandbox yet. but later for task subprocesses, it will be set up.
     notion_integration_key = os.environ.get("KLAVIS_NOTION_INTEGRATION_KEY", "XX"),
     notion_integration_key_eval = os.environ.get("KLAVIS_NOTION_INTEGRATION_KEY_EVAL", "XX"),
     source_notion_page_url = os.environ.get("KLAVIS_SOURCE_NOTION_PAGE_URL", "XX"),
