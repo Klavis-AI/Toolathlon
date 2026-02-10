@@ -403,7 +403,7 @@ class TaskAgent:
             from utils.klavis_sandbox import KlavisSandbox
             try:
                 self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
-                self._server_url_overrides = self._klavis_client.acquire_for_servers(
+                self._server_url_overrides, auth_data = self._klavis_client.acquire_for_servers(
                     self.task_config.needed_mcp_servers,
                 )
                 if self._server_url_overrides and self.debug:
@@ -416,6 +416,14 @@ class TaskAgent:
             os.environ["KLAVIS_MCP_SERVER_URLS"] = json.dumps(self._server_url_overrides)
             if self.debug:
                 print_color(f"[Klavis] Exported KLAVIS_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
+
+        # dump auth data
+        if auth_data:
+            for server_name, creds in auth_data.items():
+                if server_name == "google_sheets":
+                    print_color(f"[Klavis] Acquired credentials for '{server_name}': {creds}", "blue")
+                    with open(os.path.join(self.task_config.agent_workspace, "configs", "google_credentials.json"), 'w') as f:
+                        f.write(json.dumps(creds))
 
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""
