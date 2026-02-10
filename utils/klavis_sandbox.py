@@ -21,6 +21,11 @@ LOCAL_DEV_TASK_TO_REMOTE_NAME = {
     "arxiv_local": "arxiv",
 }
 
+# Mapping from task server name -> sandbox server name to acquire.
+TASK_SERVER_TO_SANDBOX_NAME = {
+    "arxiv-latex": "arxiv_latex",
+}
+
 
 class KlavisSandbox:
     def __init__(self, api_key: str = None):
@@ -82,11 +87,13 @@ class KlavisSandbox:
 
         # Acquire individual sandboxes for non-local_dev servers
         for name in other_servers:
-            result = self.acquire(name)
+            sandbox_name = TASK_SERVER_TO_SANDBOX_NAME.get(name, name)
+            result = self.acquire(sandbox_name)
             if result and result.get("server_urls"):
-                for sname, surl in result["server_urls"].items():
-                    overrides[sname] = surl
-                    print(f"[Klavis] Acquired sandbox for '{sname}': {surl}")
+                for sname, surl in result["server_urls"].items():  # ideally only 1 server for non-local_dev
+                    key = name if sname == sandbox_name else sname
+                    overrides[key] = surl
+                    print(f"[Klavis] Acquired sandbox for '{key}': {surl}")
         return overrides
 
     def get_sandbox_details(self, server_name: str, sandbox_id: str) -> Optional[Dict]:
