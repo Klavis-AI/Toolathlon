@@ -3,7 +3,6 @@ print("main.py started")
 try:
     from argparse import ArgumentParser
     import asyncio
-    import os
     import sys
     from .check_local import run_check_local
     from utils.general.helper import read_json  
@@ -25,18 +24,7 @@ if __name__=="__main__":
     # print(sys.argv, flush=True)
     
     res_log = read_json(args.res_log_file)
-
-    # Download workspace files from Klavis local_dev sandbox if available
-    sandbox_id = os.environ.get("TOOLATHLON_LOCAL_DEV_SANDBOX_ID")
-    api_key = os.environ.get("KLAVIS_API_KEY")
-    if sandbox_id and api_key:
-        try:
-            from utils.app_specific.local_dev.local_dev_sandbox import download_workspace
-            download_workspace(sandbox_id, args.agent_workspace, api_key)
-            print(f"[Klavis] Downloaded workspace from local_dev sandbox {sandbox_id}")
-        except Exception as e:
-            print(f"[Klavis] Failed to download workspace from local_dev sandbox: {e}")
-
+    
     # check local
     try:
         print("agent_workspace: ", args.agent_workspace)

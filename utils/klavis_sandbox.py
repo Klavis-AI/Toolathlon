@@ -7,6 +7,25 @@ from typing import Dict, Optional, List
 
 KLAVIS_API_BASE = "https://api.klavis.ai"
 
+# Task server names that should be acquired via a single "local_dev" sandbox.
+LOCAL_DEV_SERVER_NAMES = {
+    "filesystem", "git", "terminal", "python_execute",
+    "pdf-tools", "excel", "word", "pptx", "arxiv_local",
+}
+
+# Mapping from task server name -> key returned in the local_dev server_urls response.
+# Only entries that differ need to be listed; identical names are handled automatically.
+LOCAL_DEV_TASK_TO_REMOTE_NAME = {
+    "python_execute": "code-executor",
+    "pptx": "powerpoint",
+    "arxiv_local": "arxiv",
+}
+
+# Mapping from task server name -> sandbox server name to acquire.
+TASK_SERVER_TO_SANDBOX_NAME = {
+    "arxiv-latex": "arxiv_latex",
+}
+
 
 class KlavisSandbox:
     def __init__(self, api_key: str = None):
@@ -40,22 +59,61 @@ class KlavisSandbox:
         
         Returns a dict mapping server_name -> streamable-http URL for servers
         that were successfully acquired. Servers that fail are silently skipped.
+
+        Server names belonging to LOCAL_DEV_SERVER_NAMES are grouped and
+        acquired via a single ``local_dev`` sandbox call.  The returned
+        ``server_urls`` are then mapped back to the *original* task server
+        names so that downstream consumers see the keys they expect.
         """
         overrides = {}
-        for name in server_names:
-            result = self.acquire(name)
+
+        # Partition requested servers into local_dev vs. others
+        local_dev_requested = [n for n in server_names if n in LOCAL_DEV_SERVER_NAMES]
+        other_servers = [n for n in server_names if n not in LOCAL_DEV_SERVER_NAMES]
+
+        # Acquire a single local_dev sandbox for all local_dev-mapped servers
+        if local_dev_requested:
+            result = self.acquire("local_dev")
             if result and result.get("server_urls"):
-                for sname, surl in result["server_urls"].items(): # local_dev sandbox might have multiple servers
-                    overrides[sname] = surl
-                    print(f"[Klavis] Acquired sandbox for '{sname}': {surl}")
+                api_urls: Dict[str, str] = result["server_urls"]
+                # Map each task server name to its corresponding remote name in the response
+                for task_name in local_dev_requested:
+                    remote_name = LOCAL_DEV_TASK_TO_REMOTE_NAME.get(task_name, task_name)
+                    if remote_name in api_urls:
+                        overrides[task_name] = api_urls[remote_name]
+                        print(f"[Klavis] Acquired sandbox for '{task_name}' (via local_dev, remote '{remote_name}'): {api_urls[remote_name]}")
+                    else:
+                        print(f"[Klavis] Warning: local_dev sandbox has no URL for remote name '{remote_name}' (task '{task_name}')")
+
+        # Acquire individual sandboxes for non-local_dev servers
+        for name in other_servers:
+            sandbox_name = TASK_SERVER_TO_SANDBOX_NAME.get(name, name)
+            result = self.acquire(sandbox_name)
+            if result and result.get("server_urls"):
+                for sname, surl in result["server_urls"].items():  # ideally only 1 server for non-local_dev
+                    key = name if sname == sandbox_name else sname
+                    overrides[key] = surl
+                    print(f"[Klavis] Acquired sandbox for '{key}': {surl}")
         return overrides
+
+    def get_sandbox_details(self, server_name: str, sandbox_id: str) -> Optional[Dict]:
+        """Get detailed information about a specific sandbox instance."""
+        url = f"{KLAVIS_API_BASE}/sandbox/{server_name}/{sandbox_id}"
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        try:
+            resp = httpx.get(url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            print(f"[Klavis] Failed to get sandbox details for '{sandbox_id}': {e}")
+            return None
 
     def release_all(self):
         """Release all acquired sandboxes."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        for sb in self.acquired_sandboxes:
-            sandbox_id = sb.get("sandbox_id")
-            server_name = sb.get("server_name")
+        for sandbox in self.acquired_sandboxes:
+            sandbox_id = sandbox.get("sandbox_id")
+            server_name = sandbox.get("server_name")
             if not sandbox_id or not server_name:
                 continue
             try:

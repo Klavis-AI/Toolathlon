@@ -51,6 +51,11 @@ from utils.aux_tools.overlong_tool_manager import overlong_tool_tools
 
 from utils.general.helper import print_color
 from utils.status_manager import TaskStatusManager
+from utils.app_specific.local_dev.local_dev_sandbox import (
+    upload_workspace,
+    download_workspace,
+    get_local_dev_sandbox_id,
+)
 
 local_tool_mappings = {
     "ai_webpage_summary": tool_ai_webpage_summary,
@@ -395,7 +400,7 @@ class TaskAgent:
         """Acquire Klavis remote MCP sandboxes if KLAVIS_API_KEY is set.
         
         Must be called before preprocess so that server URLs are available
-        to preprocess/eval scripts via the TOOLATHLON_MCP_SERVER_URLS env var.
+        to preprocess/eval scripts via the KLAVIS_MCP_SERVER_URLS env var.
         """
         self._server_url_overrides = None
         klavis_api_key = os.environ.get("KLAVIS_API_KEY")
@@ -411,11 +416,32 @@ class TaskAgent:
             except Exception as e:
                 print_color(f"[Klavis] Sandbox acquisition failed, falling back to local: {e}", "yellow")
 
-        # Export server URLs as env var so preprocess/eval subprocesses can read them
-        if self._server_url_overrides:
-            os.environ["KLAVIS_MCP_SERVER_URLS"] = json.dumps(self._server_url_overrides)
-            if self.debug:
-                print_color(f"[Klavis] Exported KLAVIS_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
+            # Export server URLs as env var so preprocess/eval subprocesses can read them
+            if self._server_url_overrides:
+                os.environ["KLAVIS_MCP_SERVER_URLS"] = json.dumps(self._server_url_overrides)
+                if self.debug:
+                    print_color(f"[Klavis] Exported KLAVIS_MCP_SERVER_URLS env var with {len(self._server_url_overrides)} server(s)", "blue")
+
+        if getattr(self, '_klavis_client', None):
+            for sb in self._klavis_client.acquired_sandboxes:
+                if sb.get("server_name") == "notion":                    
+                    # Fetch details and update config
+                    try:
+                        details = self._klavis_client.get_sandbox_details("notion", sb["sandbox_id"])
+                        if details and "metadata" in details:
+                            meta = details["metadata"]
+                            
+                            ## these configs only use for task process: subprocesses will read these env vars to do workspace initialization (for Notion, it will clean up the old page and duplicate a new empty one for the task)
+                            os.environ["KLAVIS_NOTION_INTEGRATION_KEY"] = meta.get("toolathon_notion_integration_key")
+                            os.environ["KLAVIS_NOTION_INTEGRATION_KEY_EVAL"] = meta.get("toolathon_notion_integration_key_eval")
+                            os.environ["KLAVIS_SOURCE_NOTION_PAGE_URL"] = meta.get("toolathon_source_notion_page_url")
+                            os.environ["KLAVIS_EVAL_NOTION_PAGE_URL"] = meta.get("toolathon_eval_notion_page_url")
+                            if self.debug:
+                                print_color(f"[Klavis] Sandbox config updated: {list(os.environ.keys())}", "blue")
+                    except Exception as e:
+                        print_color(f"[Klavis] Failed to update config from sandbox details: {e}", "red")
+
+                    break
 
         # dump auth data
         if auth_data:
@@ -911,7 +937,20 @@ class TaskAgent:
                 return TaskStatus.FAILED
 
             self.status_manager.update_preprocess("done")
-            
+
+            # Upload workspace to Klavis local_dev sandbox if acquired
+            if getattr(self, '_klavis_client', None):
+                local_dev_sandbox_id = get_local_dev_sandbox_id(self._klavis_client)
+                if local_dev_sandbox_id:
+                    self._debug_print(f"Uploading workspace to local_dev sandbox {local_dev_sandbox_id}")
+                    upload_workspace(
+                        sandbox_id=local_dev_sandbox_id,
+                        directory=self.task_config.agent_workspace,
+                        api_key=self._klavis_client.api_key,
+                    )
+                    if self.debug:
+                        print_color(f"[Klavis] Uploaded workspace to local_dev sandbox {local_dev_sandbox_id}", "blue")
+
             # After preprocess, load task-specific local_token_key_session
             self.task_config.load_local_token_key_session()
 
@@ -988,6 +1027,27 @@ class TaskAgent:
             for k, v in self.stats.items():
                 self._debug_print(f"{k} : {v}")
             
+            # Download workspace from Klavis local_dev sandbox if acquired
+            if getattr(self, '_klavis_client', None):
+                local_dev_sandbox_id = get_local_dev_sandbox_id(self._klavis_client)
+                if local_dev_sandbox_id:
+                    try:
+                        self._debug_print(f"Downloading workspace from local_dev sandbox {local_dev_sandbox_id}")
+                        # Remove all content in agent workspace to avoid conflicts
+                        agent_ws = self.task_config.agent_workspace
+                        if os.path.exists(agent_ws):
+                            shutil.rmtree(agent_ws)
+                        os.makedirs(agent_ws, exist_ok=True)
+                        download_workspace(
+                            sandbox_id=local_dev_sandbox_id,
+                            directory=agent_ws,
+                            api_key=self._klavis_client.api_key,
+                        )
+                        if self.debug:
+                            print_color(f"[Klavis] Downloaded workspace from local_dev sandbox {local_dev_sandbox_id}", "blue")
+                    except Exception as e:
+                        self._debug_print(f"Failed to download workspace from local_dev sandbox: {e}")
+
             # Save final results to file
             await self.save_results()
             # Cleanup/close resources
