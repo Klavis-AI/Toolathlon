@@ -129,9 +129,12 @@ async def import_emails_via_mcp(backup_file: str):
     """
     Import emails using the MCP emails server.
     """
+    import json as _json
     from utils.mcp.tool_servers import MCPServerManager, call_tool_with_retry, ToolCallError
 
     print(f"Importing emails using the MCP emails server...")
+
+    use_remote = bool(os.environ.get("KLAVIS_API_KEY"))
 
     agent_workspace = "./"
     mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session={"emails_config_file": EMAILS_CONFIG_FILE})
@@ -139,13 +142,28 @@ async def import_emails_via_mcp(backup_file: str):
 
     async with emails_server as server:
         try:
-            result = await call_tool_with_retry(
-                server,
-                "import_emails",
-                {
+            if use_remote:
+                # Remote Cloud Run server: read file locally and pass JSON string
+                with open(backup_file, 'r', encoding='utf-8') as f:
+                    json_content = f.read()
+                tool_args = {
+                    "json_string": json_content,
+                    "target_folder": "INBOX",
+                    "preserve_folders": False
+                }
+                print(f"Using remote MCP server (KLAVIS_API_KEY set), sending JSON string")
+            else:
+                # Local MCP server: pass file path directly
+                tool_args = {
                     "import_path": backup_file,
                     "folder": "INBOX"
                 }
+                print(f"Using local MCP server, passing file path")
+
+            result = await call_tool_with_retry(
+                server,
+                "import_emails",
+                tool_args
             )
 
             if result.content:

@@ -1,9 +1,16 @@
 import asyncio
+import json
+import os
 from pathlib import Path
 from typing import Optional, Any
 
 from utils.mcp.tool_servers import MCPServerManager, call_tool_with_retry, ToolCallError
 from utils.app_specific.poste.local_email_manager import LocalEmailManager
+
+
+def _use_remote_mcp() -> bool:
+    """Check if KLAVIS_API_KEY is set, indicating remote MCP server on Cloud Run."""
+    return bool(os.environ.get("KLAVIS_API_KEY"))
 
 
 def clear_all_email_folders(emails_config_file: str):
@@ -59,14 +66,30 @@ async def import_emails_via_mcp(backup_file: str, local_token_key_session: Any,
 
     async with emails_server as server:
         try:
+            # Build tool arguments based on whether we're using remote or local MCP
+            if _use_remote_mcp():
+                # Remote Cloud Run server: read file locally and pass JSON string
+                with open(backup_file, 'r', encoding='utf-8') as f:
+                    json_content = f.read()
+                tool_args = {
+                    "json_string": json_content,
+                    "target_folder": folder,
+                    "preserve_folders": False
+                }
+                print(f"Using remote MCP server (KLAVIS_API_KEY set), sending JSON string")
+            else:
+                # Local MCP server: pass file path directly
+                tool_args = {
+                    "import_path": backup_file,
+                    "folder": folder
+                }
+                print(f"Using local MCP server, passing file path")
+
             # Use the import_emails tool to import the email backup
             result = await call_tool_with_retry(
                 server,
                 "import_emails",
-                {
-                    "import_path": backup_file,
-                    "folder": folder
-                }
+                tool_args
             )
 
             if result.content:
