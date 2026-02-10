@@ -40,9 +40,14 @@ class SystemPrompts:
               cn_mode: bool=False):
 
         if self.agent is not None:
-            self.agent = self.agent.replace("!!<<<<||||current_working_dir||||>>>>!!", os.getcwd())
-            self.agent = self.agent.replace("!!<<<<||||workspace_dir||||>>>>!!", os.path.abspath(agent_workspace))
-            self.agent = self.agent.replace("!!<<<<||||workspace_dir_rela||||>>>>!!", os.path.relpath(agent_workspace))
+            if os.environ.get("KLAVIS_API_KEY"):
+                self.agent = self.agent.replace("!!<<<<||||current_working_dir||||>>>>!!", "/data")
+                self.agent = self.agent.replace("!!<<<<||||workspace_dir||||>>>>!!", "/data")
+                self.agent = self.agent.replace("!!<<<<||||workspace_dir_rela||||>>>>!!", ".")
+            else:
+                self.agent = self.agent.replace("!!<<<<||||current_working_dir||||>>>>!!", os.getcwd())
+                self.agent = self.agent.replace("!!<<<<||||workspace_dir||||>>>>!!", os.path.abspath(agent_workspace))
+                self.agent = self.agent.replace("!!<<<<||||workspace_dir_rela||||>>>>!!", os.path.relpath(agent_workspace))
             self.agent = self.agent.replace("!!<<<<||||time||||>>>>!!", time)
             if single_turn_mode:
                 if not cn_mode:
