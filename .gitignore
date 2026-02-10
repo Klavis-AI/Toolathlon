@@ -27,6 +27,7 @@ configs/notion_state.json
 configs/snowflake_rsa_key.p8
 configs/snowflake_rsa_key.pub
 configs/.mcp-auth/
+configs/.env
 
 deployment/k8s/
 ruige
