@@ -25,6 +25,7 @@ LOCAL_DEV_TASK_TO_REMOTE_NAME = {
 TASK_SERVER_TO_SANDBOX_NAME = {
     "arxiv-latex": "arxiv_latex",
     "google_sheet": "google_sheets",
+    "wandb": "weights_and_biases",
 }
 
 
