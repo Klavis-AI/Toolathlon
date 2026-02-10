@@ -11,6 +11,7 @@
 # TOOLATHLON_OPENAI_API_KEY="your-custom-api-key"
 # export TOOLATHLON_OPENAI_BASE_URL
 # export TOOLATHLON_OPENAI_API_KEY
+export KLAVIS_API_KEY="your-klavis-api-key"
 
 set -e
 
