@@ -31,17 +31,6 @@ def main():
     except Exception as e:
         print(f"Failed to remove tar file: {e}")
     
-    # Upload workspace files to Klavis local_dev sandbox if available
-    sandbox_id = os.environ.get("TOOLATHLON_LOCAL_DEV_SANDBOX_ID")
-    api_key = os.environ.get("KLAVIS_API_KEY")
-    if sandbox_id and api_key:
-        try:
-            from utils.app_specific.local_dev.local_dev_sandbox import upload_workspace
-            result = upload_workspace(sandbox_id, args.agent_workspace, api_key)
-            print(f"[Klavis] Uploaded workspace to local_dev sandbox {sandbox_id}: {result}")
-        except Exception as e:
-            print(f"[Klavis] Failed to upload workspace to local_dev sandbox: {e}")
-
     print("Preprocessing completed - workspace files are ready.")
 
 if __name__ == "__main__":
