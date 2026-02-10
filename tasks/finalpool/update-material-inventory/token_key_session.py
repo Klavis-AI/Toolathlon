@@ -9,9 +9,9 @@ with open(folder_id_file, "r") as f:
 
 all_token_key_session = Dict(
     
-    woocommerce_api_key = "ck_woocommerce_token_barbg4XESRzo",
-    woocommerce_api_secret = "cs_woocommerce_token_barbg4XESRzo",
-    woocommerce_site_url = "http://localhost:10003/store91",
+    woocommerce_api_key = os.environ.get("KLAVIS_WOOCOMMERCE_CONSUMER_KEY", "ck_woocommerce_token_barbg4XESRzo"),
+    woocommerce_api_secret = os.environ.get("KLAVIS_WOOCOMMERCE_CONSUMER_SECRET", "cs_woocommerce_token_barbg4XESRzo"),
+    woocommerce_site_url = os.environ.get("KLAVIS_WOOCOMMERCE_SITE_URL", "http://localhost:10003/store91"),
 
     google_sheets_folder_id = folder_id,
 )

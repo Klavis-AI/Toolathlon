@@ -9,9 +9,9 @@ with open(folder_id_file, "r") as f:
 # Token configuration for stock-alert task
 all_token_key_session = Dict(
     # WooCommerce credentials
-    woocommerce_api_key = "ck_woocommerce_token_benjhMtCdOGk",
-    woocommerce_api_secret = "cs_woocommerce_token_benjhMtCdOGk", 
-    woocommerce_site_url = "http://localhost:10003/store84",
+    woocommerce_api_key = os.environ.get("KLAVIS_WOOCOMMERCE_CONSUMER_KEY", "ck_woocommerce_token_benjhMtCdOGk"),
+    woocommerce_api_secret = os.environ.get("KLAVIS_WOOCOMMERCE_CONSUMER_SECRET", "cs_woocommerce_token_benjhMtCdOGk"), 
+    woocommerce_site_url = os.environ.get("KLAVIS_WOOCOMMERCE_SITE_URL", "http://localhost:10003/store84"),
 
     google_sheets_folder_id = folder_id,
     
