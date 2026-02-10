@@ -11,7 +11,13 @@
 # TOOLATHLON_OPENAI_API_KEY="your-custom-api-key"
 # export TOOLATHLON_OPENAI_BASE_URL
 # export TOOLATHLON_OPENAI_API_KEY
-export KLAVIS_API_KEY="your-klavis-api-key"
+# Load KLAVIS_API_KEY from configs/.env if not already set
+SCRIPT_DIR_EARLY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$(dirname "$SCRIPT_DIR_EARLY")/configs/.env"
+if [ -z "${KLAVIS_API_KEY+x}" ] && [ -f "$ENV_FILE" ]; then
+    KLAVIS_API_KEY=$(grep -E '^KLAVIS_API_KEY=' "$ENV_FILE" | cut -d'=' -f2-)
+    export KLAVIS_API_KEY
+fi
 
 set -e
 
