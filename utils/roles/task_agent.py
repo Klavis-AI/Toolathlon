@@ -408,7 +408,7 @@ class TaskAgent:
             from utils.klavis_sandbox import KlavisSandbox
             try:
                 self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
-                self._server_url_overrides, auth_data = self._klavis_client.acquire_for_servers(
+                self._server_url_overrides = self._klavis_client.acquire_for_servers(
                     self.task_config.needed_mcp_servers,
                 )
                 if self._server_url_overrides and self.debug:
@@ -424,10 +424,11 @@ class TaskAgent:
 
         if getattr(self, '_klavis_client', None):
             for sb in self._klavis_client.acquired_sandboxes:
-                if sb.get("server_name") == "notion":                    
+                server_name = sb.get("server_name", "")
+                if server_name == "notion":                    
                     # Fetch details and update config
                     try:
-                        details = self._klavis_client.get_sandbox_details("notion", sb["sandbox_id"])
+                        details = self._klavis_client.get_sandbox_details(server_name, sb["sandbox_id"])
                         if details and "metadata" in details:
                             meta = details["metadata"]
                             
@@ -440,16 +441,14 @@ class TaskAgent:
                                 print_color(f"[Klavis] Sandbox config updated: {list(os.environ.keys())}", "blue")
                     except Exception as e:
                         print_color(f"[Klavis] Failed to update config from sandbox details: {e}", "red")
-
-                    break
-
-        # dump auth data
-        if auth_data:
-            for server_name, creds in auth_data.items():
                 if server_name == "google_sheets":
-                    print_color(f"[Klavis] Acquired credentials for '{server_name}': {creds}", "blue")
-                    with open(os.path.join(self.task_config.agent_workspace, "configs", "google_credentials.json"), 'w') as f:
-                        f.write(json.dumps(creds))
+                    details = self._klavis_client.get_sandbox_details(server_name, sb["sandbox_id"])
+                    auth_data = details.get("auth_data", {})
+                    if auth_data:
+                        credentials_path = os.path.join("configs", "google_sheets_credentials.json")
+                        os.makedirs(os.path.dirname(credentials_path), exist_ok=True)
+                        with open(credentials_path, "w") as f:
+                            json.dump(auth_data, f)
 
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""

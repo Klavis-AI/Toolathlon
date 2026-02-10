@@ -8,18 +8,18 @@ import pandas as pd
 from typing import Optional
 
 def get_google_service():
-    credentials_file = "configs/google_credentials.json"
+    credentials_file = "configs/google_sheets_credentials.json"
     
     with open(credentials_file, 'r') as f:
         cred_data = json.load(f)
     
     creds = Credentials(
-        token=cred_data['token'],
+        token=cred_data['access_token'],
         refresh_token=cred_data['refresh_token'],
-        token_uri=cred_data['token_uri'],
+        token_uri="https://oauth2.googleapis.com/token ",
         client_id=cred_data['client_id'],
         client_secret=cred_data['client_secret'],
-        scopes=cred_data['scopes']
+        scopes=cred_data['scope']
     )
     
     drive_service = build('drive', 'v3', credentials=creds)

@@ -24,6 +24,7 @@ LOCAL_DEV_TASK_TO_REMOTE_NAME = {
 # Mapping from task server name -> sandbox server name to acquire.
 TASK_SERVER_TO_SANDBOX_NAME = {
     "arxiv-latex": "arxiv_latex",
+    "google_sheet": "google_sheets",
 }
 
 
