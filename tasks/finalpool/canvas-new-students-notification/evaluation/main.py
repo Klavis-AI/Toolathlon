@@ -23,6 +23,7 @@ sys.path.insert(0, str(project_root))
 
 from utils.app_specific.canvas import create_canvas_evaluator
 from utils.mcp.tool_servers import MCPServerManager
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 
 
@@ -63,7 +64,7 @@ def load_student_expectations(task_dir: Path) -> dict:
     for index in existing_indices:
         if index < len(all_students):
             student = all_students[index]
-            email = student.get('email', '').strip()
+            email = rewrite_domain(student.get('email', '').strip())
             if email:
                 existing_students.append(email)
                 print(f"  {index+1:2d}. {student.get('Name', 'Unknown')} ({email})")
@@ -72,7 +73,7 @@ def load_student_expectations(task_dir: Path) -> dict:
     for index in new_student_indices:
         if index < len(all_students):
             student = all_students[index]
-            email = student.get('email', '').strip()
+            email = rewrite_domain(student.get('email', '').strip())
             if email:
                 new_students.append(email)
                 print(f"  {index+1:2d}. {student.get('Name', 'Unknown')} ({email})")

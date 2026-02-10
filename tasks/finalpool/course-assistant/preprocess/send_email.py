@@ -10,6 +10,12 @@ from pathlib import Path
 import re
 from datetime import datetime, timedelta
 
+# Add project root to sys.path for domain_utils import
+_project_root = str(Path(__file__).parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
+
 class EmailSendError(Exception):
     """Error occurred during sending emails."""
     pass
@@ -235,8 +241,7 @@ def load_emails_from_jsonl(file_path, placeholder_file_path, verbose=True):
     
     emails = []
     placeholder_values = {}
-    with open(placeholder_file_path, 'r', encoding='utf-8') as f:
-        placeholder_values = json.load(f)
+    placeholder_values = load_and_rewrite_json(str(placeholder_file_path))
 
     # Get today's date in ISO format (YYYY-MM-DD)
     today = datetime.now().strftime('%Y-%m-%d')

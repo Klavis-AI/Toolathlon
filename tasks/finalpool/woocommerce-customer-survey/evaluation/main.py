@@ -17,6 +17,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 import html
 from utils.general.helper import normalize_str
+from utils.app_specific.poste.domain_utils import rewrite_domain, load_and_rewrite_json
 
 # Add project path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -687,7 +688,7 @@ def load_expected_orders(groundtruth_workspace: str) -> Tuple[bool, Dict[str, An
         if not os.path.exists(expected_orders_file):
             return False, {"error": f"Expected orders file not found: {expected_orders_file}"}
         
-        expected_orders = read_json(expected_orders_file)
+        expected_orders = rewrite_domain(read_json(expected_orders_file))
         if not expected_orders:
             return False, {"error": "Cannot read expected orders data"}
         
@@ -780,7 +781,7 @@ def check_email_sending(expected_data: Dict[str, Any]) -> Tuple[bool, str]:
 
         # Read email configuration
         try:
-            email_config = read_json(all_token_key_session.emails_config_file)
+            email_config = rewrite_domain(read_json(all_token_key_session.emails_config_file))
             if not email_config:
                 return False, "Cannot read email configuration file"
         except Exception as e:

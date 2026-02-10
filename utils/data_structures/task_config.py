@@ -198,6 +198,10 @@ class TaskConfig:
             with open(task_str_path, 'r', encoding='utf-8') as f:
                 self.task_str = f.read()
 
+        # Rewrite @mcp.com in task_str to match the active email domain
+        from utils.app_specific.poste.domain_utils import rewrite_domain
+        self.task_str = rewrite_domain(self.task_str)
+
         # Update dump_path from global_task_config to task_root_path for isolation on repeated runs
         if self.global_task_config is not None and "dump_path" in self.global_task_config:
             global_dump_path = self.global_task_config['dump_path']

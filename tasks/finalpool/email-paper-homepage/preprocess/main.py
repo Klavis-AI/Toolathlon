@@ -19,11 +19,12 @@ from utils.app_specific.github.api import (
 )
 from utils.app_specific.github.git_ops import git_mirror_clone, git_mirror_push
 from utils.app_specific.poste.local_email_manager import LocalEmailManager
+from utils.app_specific.poste.domain_utils import get_email_domain, load_and_rewrite_json
 
 file_path = os.path.abspath(__file__)
 EMAILS_CONFIG_FILE = os.path.join(os.path.dirname(file_path), "..", "emails_config.json")
 
-RECEIVER_EMAIL_ADDR = read_json(EMAILS_CONFIG_FILE)['email']
+RECEIVER_EMAIL_ADDR = load_and_rewrite_json(EMAILS_CONFIG_FILE)['email']
 GITHUB_TOKEN = global_token_key_session.github_token
 READONLY = False
 FORKING_LIST = [
@@ -106,12 +107,12 @@ def to_importable_emails_format(legacy_emails, receiver_email: str, today_file_p
         emails_out.append({
             "email_id": email_id,
             "subject": subject,
-            "from_addr": f"{sender_name} <noreply@mcp.com>",
+            "from_addr": f"{sender_name} <noreply@{get_email_domain()}>",
             "to_addr": receiver_email,
             "cc_addr": None,
             "bcc_addr": None,
             "date": rfc2822_date,
-            "message_id": f"<email{email_id}@mcp.com>",
+            "message_id": f"<email{email_id}@{get_email_domain()}>",
             "body_text": body_text,
             "body_html": body_html,
             "attachments": []

@@ -15,16 +15,17 @@ from argparse import ArgumentParser
 
 def load_teacher_info(csv_file_path):
     """Load teacher information from CSV file"""
+    from utils.app_specific.poste.domain_utils import rewrite_domain
     try:
         with open(csv_file_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                return {
+                return rewrite_domain({
                     'name': row['Name'].strip(),
                     'email': row['email'].strip(),
                     'password': row['password'].strip(),
                     'canvas_token': row.get('canvas_token', '').strip()
-                }
+                })
     except Exception as e:
         print(f"❌ Error loading teacher info: {e}")
         return None

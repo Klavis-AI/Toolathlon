@@ -21,6 +21,11 @@ from typing import List, Tuple
 parent_dir = Path(__file__).parent.parent
 sys.path.append(str(parent_dir))
 
+# Add project root for domain utils
+project_root = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(project_root))
+from utils.app_specific.poste.domain_utils import rewrite_domain
+
 try:
     from canvas_api import CanvasAPI
     from other_key import all_token_key_session, teacher_email
@@ -85,7 +90,7 @@ class CanvasPreprocessPipeline:
                     if 1 <= index <= len(students_list):
                         student = students_list[index - 1]  # Convert to 0-based index
                         name = student.get('Name', '').strip()
-                        email = student.get('email', '').strip()
+                        email = rewrite_domain(student.get('email', '').strip())
                         
                         if name and email:
                             target_students.append((name, email))

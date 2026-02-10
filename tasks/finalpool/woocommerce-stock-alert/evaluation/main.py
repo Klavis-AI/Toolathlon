@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from evaluate_updated_stock_alert import StockAlertEvaluator
+from utils.app_specific.poste.domain_utils import get_email_domain
 
 def run_complete_evaluation(agent_workspace: str) -> tuple[bool, str]:
     """Run complete evaluation workflow for stock alert task"""
@@ -73,7 +74,7 @@ def run_complete_evaluation(agent_workspace: str) -> tuple[bool, str]:
                     summary.append("  - Verify new products are inserted after existing 6 records")
                     summary.append("  - Check that original data remains unchanged")
                 if "Email Notifications" in failed_components:
-                    summary.append("  - Send 2 emails to laura_thompson@mcp.com")
+                    summary.append(f"  - Send 2 emails to laura_thompson@{get_email_domain()}")
                     summary.append("  - One email each for MacBook Pro M3 and Nintendo Switch OLED")
                     summary.append("  - Follow the English email template format")
 

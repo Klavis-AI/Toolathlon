@@ -51,6 +51,7 @@ else:
 
 # Import app_specific Canvas modules
 from utils.app_specific.canvas import CanvasAPI, AnnouncementManager
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 ADMIN_CANVAS_API_TOKEN = all_token_key_session.admin_canvas_token
 # CANVAS_DOMAIN = all_token_key_session.canvas_domain
@@ -87,11 +88,11 @@ class CanvasCourseSetup:
             
             # Load course configuration
             with open(script_dir / 'files' / 'course_config.json', 'r') as f:
-                self.courses_data = json.load(f)
+                self.courses_data = rewrite_domain(json.load(f))
             
             # Load users data
             with open(script_dir / 'files' / 'canvas_users.json', 'r') as f:
-                self.users_data = json.load(f)
+                self.users_data = rewrite_domain(json.load(f))
                 
             logger.info("Data loaded successfully")
             return True

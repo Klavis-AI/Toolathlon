@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(__file__))
 from configs.token_key_session import all_token_key_session
 # from utils.app_specific.notion_page_duplicator import NotionPageDuplicator
 from utils.general.helper import run_command, print_color
+from utils.app_specific.poste.domain_utils import rewrite_domain, load_and_rewrite_json
 from .clean_local_emails import clean_emails
 
 NEEDED_SUBPAGE_NAME = "Job Finder"
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 
     # Clean target recipient inboxes
-    config = {
+    config = rewrite_domain({
         "email": "laura.hall@mcp.com",
         "password": "laura2004%fA",
         "name": "Meeting Assignment Agent",
@@ -53,10 +54,10 @@ if __name__ == "__main__":
         "smtp_port": 1587,
         "use_ssl": False,
         "use_starttls": False
-    }
+    })
     clean_emails(config)
 
-    config = {
+    config = rewrite_domain({
         "email": "janetr@mcp.com",
         "password": "Jrogers864D2",
         "name": "Meeting Assignment Agent",
@@ -66,7 +67,7 @@ if __name__ == "__main__":
         "smtp_port": 1587,
         "use_ssl": False,
         "use_starttls": False
-    }
+    })
     clean_emails(config)
     
     # Clean all other emails from other_emails.txt
@@ -78,8 +79,9 @@ if __name__ == "__main__":
                 line = line.strip()
                 if line and ";;" in line:
                     email_addr, password = line.split(";;", 1)
+                    email_addr = rewrite_domain(email_addr.strip())
                     config = {
-                        "email": email_addr.strip(),
+                        "email": email_addr,
                         "password": password.strip(),
                         "name": "Email Cleaner Agent",
                         "imap_server": "localhost",

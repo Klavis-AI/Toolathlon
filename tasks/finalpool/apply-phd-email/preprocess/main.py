@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))  # Add task directory to path
 from token_key_session import all_token_key_session
 from utils.app_specific.poste.email_import_utils import setup_email_environment
+from utils.app_specific.poste.domain_utils import rewrite_json_file_in_place
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -47,6 +48,9 @@ if __name__ == "__main__":
     if not task_backup_file.exists():
         print("❌ Task email backup file not found. Please run the conversion script to generate emails_backup.json first.")
         sys.exit(1)
+
+    # Rewrite @mcp.com in the backup file to match the current email domain
+    rewrite_json_file_in_place(str(task_backup_file))
 
     # Use utility function to set up email environment
     success = setup_email_environment(

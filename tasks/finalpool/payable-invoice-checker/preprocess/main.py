@@ -6,6 +6,7 @@ import json
 from rich import print
 from utils.general.helper import read_json,print_color
 from utils.app_specific.poste.ops import clear_folder
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 # Add project root to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -141,7 +142,7 @@ async def main():
     
     # clear emails
     involved_emails_file = os.path.join(os.path.dirname(__file__), "..", "files", "involved_emails.json")
-    involved_emails = read_json(involved_emails_file)
+    involved_emails = load_and_rewrite_json(involved_emails_file)
     for role in involved_emails:
         for email_address, config in involved_emails[role].items():
             full_config = {"email": email_address, **config}

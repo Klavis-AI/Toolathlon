@@ -10,12 +10,15 @@ import os
 from pathlib import Path
 from argparse import ArgumentParser
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from utils.app_specific.poste.domain_utils import rewrite_domain
+
 
 def load_generated_inbox(inbox_path):
     """Load the generated inbox JSON file"""
     try:
         with open(inbox_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            data = rewrite_domain(json.load(f))
         print(f"✅ Loaded inbox with {data['total_emails']} emails")
         print(f"📅 Export date: {data['export_date']}")
         return data

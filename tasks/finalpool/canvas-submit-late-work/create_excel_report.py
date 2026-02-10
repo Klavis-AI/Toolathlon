@@ -6,18 +6,22 @@ This script creates a beautiful Excel spreadsheet with student grades and statis
 
 import pandas as pd
 import json
+import os
+import sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 from datetime import datetime
-import os
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def create_grade_summary_excel():
     """Create a comprehensive Excel file with student grades and statistics"""
     
     # Load user configuration data
-    with open('/ssddata/xiaochen/workspace/toolathlon/tasks/xiaochen/canvas_collect_work_data/files/user_config.json', 'r') as f:
-        data = json.load(f)
+    with open(os.path.join(os.path.dirname(__file__), 'files', 'user_config.json'), 'r') as f:
+        data = rewrite_domain(json.load(f))
     
     # Create workbook
     wb = Workbook()

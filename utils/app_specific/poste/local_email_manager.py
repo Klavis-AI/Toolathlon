@@ -21,8 +21,9 @@ class LocalEmailManager:
     
     def __init__(self, config_file: str, verbose: bool = True):
 
+        from utils.app_specific.poste.domain_utils import rewrite_domain
         with open(config_file, 'r', encoding='utf-8') as f:
-            self.config = json.load(f)
+            self.config = rewrite_domain(json.load(f))
 
         self.email = self.config['email']
         self.password = self.config.get('password') or ""  # Allow empty password (local uncertified)

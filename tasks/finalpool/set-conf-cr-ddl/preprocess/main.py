@@ -8,6 +8,7 @@ import asyncio
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from token_key_session import all_token_key_session
 from utils.app_specific.poste.email_import_utils import clear_all_email_folders
+from utils.app_specific.poste.domain_utils import rewrite_json_file_in_place
 from utils.mcp.tool_servers import MCPServerManager, call_tool_with_retry, ToolCallError
 
 async def clear_google_calendar():
@@ -166,6 +167,9 @@ if __name__=="__main__":
             print(f"❌ Email backup file does not exist: {backup_file}")
             print("Please run convert_emails.py first to generate the email backup file")
             sys.exit(1)
+
+        # Rewrite @mcp.com in the backup file to match the current email domain
+        rewrite_json_file_in_place(str(backup_file))
 
         print("\n" + "=" * 60)
         print("Importing emails into local email system")

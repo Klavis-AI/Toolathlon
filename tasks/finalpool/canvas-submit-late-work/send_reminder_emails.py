@@ -8,10 +8,14 @@ This script sends reminder emails to students with incomplete assignments.
 
 import json
 import os
+import sys
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+from utils.app_specific.poste.domain_utils import domain_str, rewrite_domain
 
 def create_reminder_email_script():
     """
@@ -20,7 +24,7 @@ def create_reminder_email_script():
     
     # Load user configuration data
     with open(os.path.join(os.path.dirname(__file__), 'files', 'user_config.json'), 'r') as f:
-        data = json.load(f)
+        data = rewrite_domain(json.load(f))
     
     # Print system title and separator
     print("📧 Email Reminder System - Cinema Culture Appreciation")
@@ -64,7 +68,7 @@ If you need any assistance or have questions about the assignments, please don't
 Best regards,
 Course Instructor
 Cinema Culture Appreciation (FILM101)
-📧 mcpcanvasadmin2@mcp.com
+📧 {domain_str('mcpcanvasadmin2')}
 """
         # Return email subject and body
         return subject, body
@@ -131,7 +135,7 @@ Cinema Culture Appreciation (FILM101)
         # Write email file with header information and body
         with open(filename, 'w') as f:
             f.write(f"TO: {student_info['email']}\n")
-            f.write(f"FROM: mcpcanvasadmin2@mcp.com\n")
+            f.write(f"FROM: {domain_str('mcpcanvasadmin2')}\n")
             f.write(f"SUBJECT: {student_info['subject']}\n")
             f.write(f"DATE: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n\n")
@@ -154,7 +158,7 @@ def send_reminder_emails():
     # email configuration (update with actual SMTP settings)
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
-    sender_email = "mcpcanvasadmin2@mcp.com"
+    sender_email = "{domain_str('mcpcanvasadmin2')}"
     sender_password = "your_password_here"
     
     # email data to be sent

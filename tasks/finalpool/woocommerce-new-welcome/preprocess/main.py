@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List
 
 from utils.app_specific.poste.email_import_utils import clear_all_email_folders
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 # Add parent directory to import token configuration
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -259,7 +260,7 @@ def read_json_data(json_path: str):
     
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
-            customers = json.load(f)
+            customers = rewrite_domain(json.load(f))
         
         # Ensure data format is correct
         processed_customers = []

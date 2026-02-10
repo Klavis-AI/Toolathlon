@@ -13,6 +13,7 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from utils.general.helper import read_json
 from utils.app_specific.poste.ops import clear_folder
+from utils.app_specific.poste.domain_utils import rewrite_domain, load_and_rewrite_json
 from rich import print
 
 # Add project root to Python path  
@@ -45,7 +46,7 @@ def load_expense_claims(groundtruth_dir: str) -> List[Dict[str, Any]]:
     """Load expense claims from JSON file"""
     expense_file = os.path.join(groundtruth_dir, "expense_claims.json")
     with open(expense_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        return rewrite_domain(json.load(f))
 
 def create_main_expense_pdf(filepath: str, claim: Dict[str, Any]) -> None:
     """Create the main expense PDF (without invoice details)"""
@@ -233,7 +234,7 @@ async def main():
     print("="*60)
     
     involved_emails_file = os.path.join(os.path.dirname(__file__), "..", "files", "involved_emails.json")
-    involved_emails = read_json(involved_emails_file)
+    involved_emails = load_and_rewrite_json(involved_emails_file)
     for role in involved_emails:
         for email_address, config in involved_emails[role].items():
             full_config = {"email": email_address, **config}

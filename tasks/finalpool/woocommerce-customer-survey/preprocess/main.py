@@ -36,6 +36,7 @@ from utils.app_specific.woocommerce import (
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from utils.app_specific.google_form.ops import clear_google_forms
+from utils.app_specific.poste.domain_utils import get_email_domain, rewrite_domain
 
 def clear_mailbox() -> Dict:
     """
@@ -53,14 +54,14 @@ def clear_mailbox() -> Dict:
         # Read mail config file
         try:
             with open(all_token_key_session.emails_config_file, 'r', encoding='utf-8') as f:
-                email_config = json.load(f)
-            email_address = email_config.get('email', 'admin@mcp.com')
+                email_config = rewrite_domain(json.load(f))
+            email_address = email_config.get('email', f'admin@{get_email_domain()}')
             email_password = email_config.get('password', 'admin_password')
             imap_server = email_config.get('imap_server', 'localhost')
             imap_port = email_config.get('imap_port', 1143)
         except Exception as e:
             print(f"⚠️ Failed to read email config file, using default config: {e}")
-            email_address = 'admin@mcp.com'
+            email_address = f'admin@{get_email_domain()}'
             email_password = 'admin_password'
             imap_server = 'localhost'
             imap_port = 1143

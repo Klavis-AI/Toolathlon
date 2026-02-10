@@ -104,9 +104,10 @@ class ExamNotificationSender:
         
     def _load_config(self, config_file: str) -> Dict[str, Any]:
         """Load config from file"""
+        from utils.app_specific.poste.domain_utils import rewrite_domain
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
+                config = rewrite_domain(json.load(f))
             self.logger.info("Config file loaded successfully")
             return config
         except Exception as e:
@@ -493,9 +494,10 @@ class ExamNotificationInjector:
         
     def _load_config(self, config_file: str) -> Dict[str, Any]:
         """Load config file"""
+        from utils.app_specific.poste.domain_utils import rewrite_domain
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
+                config = rewrite_domain(json.load(f))
             self.logger.info("Config file loaded successfully")
             return config
         except Exception as e:

@@ -124,6 +124,11 @@ if [ ! -z "${KLAVIS_API_KEY+x}" ]; then
     echo "Detected host KLAVIS_API_KEY, will pass into container"
 fi
 
+if [ ! -z "${TOOLATHLON_EMAIL_DOMAIN+x}" ]; then
+    EXTRA_ENV_ARGS+=("-e" "TOOLATHLON_EMAIL_DOMAIN=${TOOLATHLON_EMAIL_DOMAIN}")
+    echo "Detected host TOOLATHLON_EMAIL_DOMAIN=${TOOLATHLON_EMAIL_DOMAIN}, will pass into container"
+fi
+
 # Detect TOOLATHLON_MODEL_PARAMS_FILE - will copy file and set container path later
 HOST_MODEL_PARAMS_FILE=""
 CONTAINER_MODEL_PARAMS_FILE=""

@@ -45,6 +45,7 @@ if parent_dir not in sys.path:
 # Import Canvas configuration
 from token_key_session import all_token_key_session as local_all_token_key_session
 from configs.token_key_session import all_token_key_session as global_all_token_key_session
+from utils.app_specific.poste.domain_utils import rewrite_domain
 CANVAS_API_TOKEN = local_all_token_key_session.admin_canvas_token
 
 
@@ -70,11 +71,11 @@ class CanvasCourseSetup:
         try:
             # Load course configuration
             with open(f'{parent_dir}/files/course_config.json', 'r') as f:
-                self.courses_data = json.load(f)
+                self.courses_data = rewrite_domain(json.load(f))
             
             # Load users data
             with open(f'{parent_dir}/files/canvas_users.json', 'r') as f:
-                self.users_data = json.load(f)
+                self.users_data = rewrite_domain(json.load(f))
                 
             logger.info("Data loaded successfully")
             return True

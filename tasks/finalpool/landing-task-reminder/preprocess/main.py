@@ -13,6 +13,7 @@ sys.path.insert(0, project_root)
 from utils.app_specific.snowflake.client import execute_query, get_connection, fetch_all_dict
 from utils.app_specific.poste.ops import clear_folder
 from utils.general.helper import print_color
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 # Import task-specific config
 task_root = os.path.join(current_dir, '..')
@@ -25,8 +26,7 @@ def get_snowflake_current_time():
 
 def clear_all_emails():
     email_config_file = os.path.join(os.path.dirname(__file__), '..', 'groundtruth_workspace', 'involved_emails.json')
-    with open(email_config_file, 'r', encoding='utf-8') as f:
-        involved_emails_data = json.load(f)
+    involved_emails_data = load_and_rewrite_json(email_config_file)
     
     # Clear sender emails
     for sender_email, config in involved_emails_data["sender"].items():
@@ -50,8 +50,7 @@ def init_database(agent_workspace, launch_time):
     print_color("✓ Database created", "green")
     
     data_file = f"{os.path.dirname(__file__)}/../groundtruth_workspace/landing_task.json"
-    with open(data_file, 'r') as f:
-        data = json.load(f)
+    data = load_and_rewrite_json(data_file)
     
     launch_date = datetime.strptime(launch_time, "%Y-%m-%d %H:%M:%S")
     

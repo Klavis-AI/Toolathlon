@@ -5,11 +5,12 @@ import imaplib
 import email
 from email.header import decode_header
 from typing import List, Tuple
+from utils.app_specific.poste.domain_utils import get_email_domain, rewrite_domain, domain_str
 
 def check_application_emails_in_mailboxes() -> Tuple[bool, List[str]]:
     """Check if job application emails from Janet Mendoza exist in the specified mailboxes with correct content"""
     # Specific requirements for each target email
-    target_requirements = {
+    target_requirements = rewrite_domain({
         'laura.hall@mcp.com': {
             'company': 'HCD',
             'position': 'Software Engineer',
@@ -21,7 +22,7 @@ def check_application_emails_in_mailboxes() -> Tuple[bool, List[str]]:
             ]
         },
         'janetr@mcp.com': {
-            'company': 'AHC', 
+            'company': 'AHC',
             'position': 'Software Engineer',
             'expected_subject': 'Job Application for Software Engineer',
             'expected_content_template': [
@@ -30,7 +31,7 @@ def check_application_emails_in_mailboxes() -> Tuple[bool, List[str]]:
                 'Software Engineer'
             ]
         }
-    }
+    })
     
     sender_name = 'Janet Mendoza'
     
@@ -46,7 +47,7 @@ def check_application_emails_in_mailboxes() -> Tuple[bool, List[str]]:
             config_path = os.path.join(os.path.dirname(__file__), '..', 'receivers_config.json')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as f:
-                    email_config = json.load(f)
+                    email_config = rewrite_domain(json.load(f))
             else:
                 print(f"Email config file not found at {config_path}")
                 return False, ["Email configuration file not found. Please create emails_config.json with email credentials."]
@@ -242,7 +243,7 @@ def check_application_emails_in_mailboxes() -> Tuple[bool, List[str]]:
         for email_info in emails_found:
             print(f"- {email_info['company']} application to: {email_info['recipient']}")
             print(f"  Subject: {email_info['subject']}")
-        return True, [f"Found all required job application emails: HCD to laura.hall@mcp.com, AHC to janetr@mcp.com"]
+        return True, [f"Found all required job application emails: HCD to laura.hall@{get_email_domain()}, AHC to janetr@{get_email_domain()}"]
     else:
         missing = [email_addr for email_addr, found in validation_results.items() if not found]
         print(f"\n=== ❌ Missing job application emails ===")
@@ -253,7 +254,7 @@ def check_application_emails_in_mailboxes() -> Tuple[bool, List[str]]:
 
 def check_other_emails_empty() -> Tuple[bool, List[str]]:
     """Check that all other emails have empty inboxes - if any have emails, task should fail"""
-    other_emails_file = '/home/jzhao/workspace/toolathlon/tasks/finalpool/notion-find-job/other_emails.txt'
+    other_emails_file = os.path.join(os.path.dirname(__file__), '..', 'other_emails.txt')
     
     if not os.path.exists(other_emails_file):
         return True, ["other_emails.txt not found - skipping check"]
@@ -268,7 +269,7 @@ def check_other_emails_empty() -> Tuple[bool, List[str]]:
                     continue
                 
                 email_addr, password = line.split(";;", 1)
-                email_addr = email_addr.strip()
+                email_addr = rewrite_domain(email_addr.strip())
                 password = password.strip()
                 
                 print(f"Checking {email_addr} for unwanted emails...")

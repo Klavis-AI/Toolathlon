@@ -95,7 +95,7 @@ WP_URL="http://localhost:$PORT"
 WP_TITLE="My WooCommerce Store"
 WP_ADMIN_USER="mcpwoocommerce"
 WP_ADMIN_PASS="mcpwoocommerce"
-WP_ADMIN_EMAIL="woocommerce@mcp.com"
+WP_ADMIN_EMAIL="woocommerce@${TOOLATHLON_EMAIL_DOMAIN:-mcp.com}"
 # this account is not activated in poste, we just use it as a admin
 PRESET_NUM_SITES=20
 

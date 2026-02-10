@@ -26,6 +26,7 @@ except ImportError:
     MCP_AVAILABLE = False
 from utils.general.helper import print_color
 from utils.app_specific.snowflake import fetch_all
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 # Load task-local token session if present
 local_token_key_session_file = os.path.join(os.path.dirname(__file__), "..", "token_key_session.py")
@@ -48,7 +49,7 @@ def load_jsonl(path: str):
         for line in f:
             line = line.strip()
             if line:
-                records.append(json.loads(line))
+                records.append(rewrite_domain(json.loads(line)))
     return records
 
 

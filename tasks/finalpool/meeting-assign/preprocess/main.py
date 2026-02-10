@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from .clean_local_emails import clean_emails
 import os
 from utils.general.helper import run_command
+from utils.app_specific.poste.domain_utils import rewrite_domain
 import asyncio
 import tarfile
 import shutil
@@ -33,7 +34,7 @@ if __name__=="__main__":
     asyncio.run(run_command(f"nohup uv run python -m http.server 30137 --directory {tmp_dir} > {tmp_dir}/http.log 2>&1 &",debug=True,show_output=True))
 
     # clean emails
-    receiver_config={
+    receiver_config=rewrite_domain({
         "email": "jjones@mcp.com",
         "password": "jessica1987%",
         "name": "Meeting Assignment Agent",
@@ -43,5 +44,5 @@ if __name__=="__main__":
         "smtp_port": 1587,
         "use_ssl": False,
         "use_starttls": False
-    }
+    })
     clean_emails(receiver_config)

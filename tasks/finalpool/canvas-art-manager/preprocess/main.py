@@ -21,6 +21,7 @@ import asyncio
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 from utils.app_specific.canvas import CanvasAPI
+from utils.app_specific.poste.domain_utils import get_email_domain, domain_str
 
 def run_command(command, description="", check=True, shell=True):
     """Run a command and handle output"""
@@ -385,7 +386,7 @@ if __name__ == "__main__":
 
     imap_server = "localhost"
     imap_port = 1143
-    to_email = "mcpcanvasadmin3@mcp.com"  # Target inbox email
+    to_email = domain_str("mcpcanvasadmin3")  # Target inbox email
 
     # Clear the entire inbox
     clear_inbox(

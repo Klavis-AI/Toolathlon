@@ -40,6 +40,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from token_key_session import all_token_key_session
+from utils.app_specific.poste.domain_utils import rewrite_domain
 CANVAS_API_TOKEN = all_token_key_session.admin_canvas_token
 
 # Configure logging
@@ -66,11 +67,11 @@ class CanvasCourseSetup:
             script_dir = Path(__file__).parent.parent
             # Load course configuration for Cinema Culture Appreciation
             with open(script_dir / 'files' / 'course_config.json', 'r') as f:
-                self.courses_data = json.load(f)
+                self.courses_data = rewrite_domain(json.load(f))
             
             # Load users data
             with open(script_dir / 'files' / 'canvas_users.json', 'r') as f:
-                self.users_data = json.load(f)
+                self.users_data = rewrite_domain(json.load(f))
                 
             print("Cinema Culture Appreciation course data loaded successfully")
             return True
@@ -1200,7 +1201,7 @@ class CanvasCourseSetup:
     
     def generate_student_answer_patterns(self) -> Dict[str, Dict]:
         """Generate realistic student answer patterns based on our user_config.json data"""
-        patterns = {
+        patterns = rewrite_domain({
             "elizabethr@mcp.com": {
                 "completed_assignments": [True, True, True, True, False, False],
                 "answer_choices": [
@@ -1311,7 +1312,7 @@ class CanvasCourseSetup:
                     {0: 0}    # Correct
                 ]
             }
-        }
+        })
         
         return patterns
 

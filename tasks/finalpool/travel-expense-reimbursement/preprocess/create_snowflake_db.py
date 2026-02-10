@@ -19,6 +19,7 @@ sys.path.insert(0, parent_dir)
 from token_key_session import all_token_key_session as local_token_key_session
 
 from utils.general.helper import print_color
+from utils.app_specific.poste.domain_utils import get_email_domain, load_and_rewrite_json
 
 DB_NAME = "TRAVEL_EXPENSE_REIMBURSEMENT"
 SCHEMA_NAME = "PUBLIC"
@@ -31,7 +32,7 @@ def slugify_email(name: str) -> str:
     name = re.sub(r"[^a-z0-9\s.]", "", name)
     name = re.sub(r"\s+", ".", name)
     name = re.sub(r"\.+", ".", name).strip(".")
-    return f"{name}@mcp.com"
+    return f"{name}@{get_email_domain()}"
 
 
 async def execute_sql(server, sql_query: str, tool_type: str = "write"):
@@ -51,8 +52,7 @@ def load_employees_from_groundtruth(groundtruth_dir: str) -> List[Tuple[str, str
     expense_file = os.path.join(groundtruth_dir, "expense_claims.json")
     if not os.path.exists(expense_file):
         return []
-    with open(expense_file, 'r', encoding='utf-8') as f:
-        claims = json.load(f)
+    claims = load_and_rewrite_json(expense_file)
 
     seen = {}
     for c in claims:
@@ -88,8 +88,7 @@ def load_manager_mapping(groundtruth_dir: str):
         if not os.path.exists(mapping_path):
             continue
             
-        with open(mapping_path, 'r', encoding='utf-8') as f:
-            mp = json.load(f)
+        mp = load_and_rewrite_json(mapping_path)
         
         # groups -> employees (id + email) and managers (name + email)
         for grp in mp.get('groups', []):

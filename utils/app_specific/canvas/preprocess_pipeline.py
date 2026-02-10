@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
 from .api_client import CanvasAPI, CanvasTokenManager
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 
 class CanvasPreprocessUtils:
@@ -99,7 +100,7 @@ class CanvasPreprocessUtils:
                 
                 for index, user_data in selected_users:
                     name = user_data.get(name_column, '').strip()
-                    email = user_data.get(email_column, '').strip()
+                    email = rewrite_domain(user_data.get(email_column, '').strip())
                     
                     if name and email:
                         if self.add_user_to_course_by_email(course_id, email, role):
