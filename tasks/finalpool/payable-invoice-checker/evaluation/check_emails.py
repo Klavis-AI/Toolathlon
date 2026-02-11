@@ -172,42 +172,42 @@ def main(groundtruth_file: str = "./groundtruth_workspace/invoice.jsonl") -> boo
         "dcooper@mcp.com": {
             "email": "dcooper@mcp.com",
             "password": "cooper$d660s",
-            "imap_server": "136.119.166.94", 
+            "imap_server": "localhost", 
             "imap_port": 1143,
             "use_ssl": False
         },
         "turnerj@mcp.com": {
             "email": "turnerj@mcp.com", 
             "password": "jose_86UKmSi",
-            "imap_server": "136.119.166.94", 
+            "imap_server": "localhost", 
             "imap_port": 1143,
             "use_ssl": False
         },
         "anthony_murphy24@mcp.com": {
             "email": "anthony_murphy24@mcp.com",
             "password": "anthony1997#",
-            "imap_server": "136.119.166.94", 
+            "imap_server": "localhost", 
             "imap_port": 1143,
             "use_ssl": False
         },
         "ashley_anderson@mcp.com": {
             "email": "ashley_anderson@mcp.com",
             "password": "AA0202@kEpFH",
-            "imap_server": "136.119.166.94", 
+            "imap_server": "localhost", 
             "imap_port": 1143,
             "use_ssl": False
         },
         "brenda_rivera81@mcp.com": {
             "email": "brenda_rivera81@mcp.com",
             "password": "brenda1991$q",
-            "imap_server": "136.119.166.94", 
+            "imap_server": "localhost", 
             "imap_port": 1143,
             "use_ssl": False
         },
         "cturner@mcp.com": {
             "email": "cturner@mcp.com",
             "password": "carol2002$ik",
-            "imap_server": "136.119.166.94", 
+            "imap_server": "localhost", 
             "imap_port": 1143,
             "use_ssl": False
         }
@@ -255,7 +255,7 @@ def main(groundtruth_file: str = "./groundtruth_workspace/invoice.jsonl") -> boo
     sender_config = rewrite_domain({
         "email": "walkera@mcp.com",
         "password": "AW0808!6v5nP",
-        "imap_server": "136.119.166.94",
+        "imap_server": "localhost",
         "imap_port": 1143,
         "use_ssl": False
     })

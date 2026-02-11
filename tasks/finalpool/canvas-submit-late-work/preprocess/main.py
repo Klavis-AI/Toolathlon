@@ -37,7 +37,7 @@ def clear_mailbox() -> Dict:
     
     try:
         # mailbox configuration (according to the configuration in check_remote.py)
-        imap_server = '136.119.166.94'
+        imap_server = 'localhost'
         imap_port = 1143
         email_address = all_token_key_session.admin_email_address
         email_password = all_token_key_session.admin_email_password

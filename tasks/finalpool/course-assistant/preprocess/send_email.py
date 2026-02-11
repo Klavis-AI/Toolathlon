@@ -21,7 +21,7 @@ class EmailSendError(Exception):
     pass
 
 class LocalEmailSender:
-    def __init__(self, sender_email, password, smtp_server='136.119.166.94', smtp_port=1587, use_ssl=False, use_starttls=False, use_auth=True, verbose=True):
+    def __init__(self, sender_email, password, smtp_server='localhost', smtp_port=1587, use_ssl=False, use_starttls=False, use_auth=True, verbose=True):
         """
         Initialize local email sender.
         :param sender_email: Sender email address

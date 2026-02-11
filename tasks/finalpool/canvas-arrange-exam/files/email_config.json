@@ -1,11 +1,11 @@
 {
     "server_config": {
-        "smtp_server": "136.119.166.94",
+        "smtp_server": "localhost",
         "smtp_port": 2525,
-        "imap_server": "136.119.166.94",
+        "imap_server": "localhost",
         "imap_port": 1143,
         "use_ssl": false,
-        "use_starttls": true,
+        "use_starttls": false,
         "timeout": 30
     },
     "sender_account": {

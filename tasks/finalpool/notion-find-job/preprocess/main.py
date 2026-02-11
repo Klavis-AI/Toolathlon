@@ -48,12 +48,12 @@ if __name__ == "__main__":
         "email": "laura.hall@mcp.com",
         "password": "laura2004%fA",
         "name": "Meeting Assignment Agent",
-        "imap_server": "136.119.166.94",
+        "imap_server": "localhost",
         "imap_port": 1143,
-        "smtp_server": "136.119.166.94",
+        "smtp_server": "localhost",
         "smtp_port": 1587,
         "use_ssl": False,
-        "use_starttls": True
+        "use_starttls": False
     })
     clean_emails(config)
 
@@ -61,12 +61,12 @@ if __name__ == "__main__":
         "email": "janetr@mcp.com",
         "password": "Jrogers864D2",
         "name": "Meeting Assignment Agent",
-        "imap_server": "136.119.166.94",
+        "imap_server": "localhost",
         "imap_port": 1143,
-        "smtp_server": "136.119.166.94",
+        "smtp_server": "localhost",
         "smtp_port": 1587,
         "use_ssl": False,
-        "use_starttls": True
+        "use_starttls": False
     })
     clean_emails(config)
     
@@ -84,12 +84,12 @@ if __name__ == "__main__":
                         "email": email_addr,
                         "password": password.strip(),
                         "name": "Email Cleaner Agent",
-                        "imap_server": "136.119.166.94",
+                        "imap_server": "localhost",
                         "imap_port": 1143,
-                        "smtp_server": "136.119.166.94",
+                        "smtp_server": "localhost",
                         "smtp_port": 1587,
                         "use_ssl": False,
-                        "use_starttls": True
+                        "use_starttls": False
                     }
                     print_color(f"Cleaning inbox for {email_addr}", "blue")
                     clean_emails(config)

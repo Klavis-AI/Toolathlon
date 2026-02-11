@@ -61,7 +61,7 @@ async def import_emails_via_mcp(backup_file: str, local_token_key_session: Any,
     agent_workspace = "./"  # MCP requires a workspace path
 
     # Create MCP server manager
-    mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session=local_token_key_session)
+    mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session=local_token_key_session, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     emails_server = mcp_manager.servers['emails']
 
     async with emails_server as server:

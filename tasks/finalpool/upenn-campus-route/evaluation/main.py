@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 import asyncio
 from pathlib import Path
@@ -117,7 +118,7 @@ def find_optimal_route(distance_matrix: Dict[str, Dict[str, Tuple[int, str]]]) -
 async def main(args):
     """Evaluate UPenn campus route planning task."""
 
-    server_manager = MCPServerManager(agent_workspace="./")
+    server_manager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     server = server_manager.servers['google_map']
 
     async with server as server_instance:

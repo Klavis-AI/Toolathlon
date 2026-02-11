@@ -190,7 +190,8 @@ async def initialize_database():
     mcp_manager = MCPServerManager(
         agent_workspace="./",
         config_dir="configs/mcp_servers",
-        local_token_key_session=local_token_key_session
+        local_token_key_session=local_token_key_session,
+        server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
     )
 
     snowflake_server = mcp_manager.servers['snowflake']

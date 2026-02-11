@@ -6,6 +6,7 @@ This module sets up Canvas environment for the notification task using
 the centralized utils.app_specific.canvas utility functions.
 """
 
+import os
 import sys
 import argparse
 import asyncio
@@ -73,7 +74,8 @@ async def delete_courses_via_mcp(target_course_names):
             agent_workspace=str(workspace),
             config_dir=str(toolathlon_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session
+            local_token_key_session=local_token_key_session,
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
 
         # Connect to canvas server specifically

@@ -276,7 +276,7 @@ def check_other_emails_empty() -> Tuple[bool, List[str]]:
                 
                 try:
                     # Connect to IMAP server
-                    mail = imaplib.IMAP4(host='136.119.166.94', port=1143)
+                    mail = imaplib.IMAP4(host='localhost', port=1143)
                     
                     try:
                         # Login

@@ -6,6 +6,7 @@ Initialize customer support SLA timeout monitoring system database using MCP Sno
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 from datetime import datetime, timedelta
@@ -356,7 +357,8 @@ async def initialize_database():
     mcp_manager = MCPServerManager(
         agent_workspace="./",
         config_dir="configs/mcp_servers",
-        local_token_key_session=local_token_key_session
+        local_token_key_session=local_token_key_session,
+        server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
     )
     
     try:

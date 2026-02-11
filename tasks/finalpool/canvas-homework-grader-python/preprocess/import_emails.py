@@ -100,7 +100,8 @@ async def import_emails_via_mcp(inbox_path, target_folder="INBOX", preserve_fold
             agent_workspace=str(workspace),
             config_dir=str(toolathlon_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session  # This is the key part!
+            local_token_key_session=local_token_key_session,  # This is the key part!
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
         
         # Connect to emails server specifically

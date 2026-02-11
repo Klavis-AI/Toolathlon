@@ -59,6 +59,7 @@ class LocalEmailManager:
             mail = imaplib.IMAP4(self.imap_server, self.imap_port)
 
         try:
+            print(f"[IMAP] Connecting to IMAP server at {self.email}:{self.password}")
             mail.login(self.email, self.password)
         except imaplib.IMAP4.error as e:
             raise RuntimeError(f"IMAP login failed: {e}")

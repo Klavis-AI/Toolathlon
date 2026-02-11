@@ -202,7 +202,7 @@ async def get_real_time_prices():
     
     # Get real-time prices
     try:
-        server_manager = MCPServerManager(agent_workspace="./")
+        server_manager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
         playwright_server = server_manager.servers['playwright_with_chunk']
         
         async with playwright_server as pw_server:

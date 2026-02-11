@@ -137,7 +137,7 @@ async def import_emails_via_mcp(backup_file: str):
     use_remote = bool(os.environ.get("KLAVIS_API_KEY"))
 
     agent_workspace = "./"
-    mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session={"emails_config_file": EMAILS_CONFIG_FILE})
+    mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session={"emails_config_file": EMAILS_CONFIG_FILE}, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     emails_server = mcp_manager.servers['emails']
 
     async with emails_server as server:

@@ -143,7 +143,7 @@ async def main(args):
     # 3. Initialize MCP and connect to Google Calendar
     print("\n🔧 Connecting to Google Calendar...")
     try:
-        mcp_manager = MCPServerManager(agent_workspace=workspace_path, debug=False)
+        mcp_manager = MCPServerManager(agent_workspace=workspace_path, debug=False, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
         await mcp_manager.connect_servers(['google_calendar'])
         
         if not mcp_manager.is_server_connected('google_calendar'):

@@ -79,7 +79,7 @@ def clear_inbox(imap_server, imap_port, email_user=None, email_pass=None, mailbo
             "imap_server": imap_server,
             "imap_port": imap_port,
             "use_ssl": False,  # Canvas Art Manager uses non-SSL
-            "use_starttls": True
+            "use_starttls": False
         }
 
         print(f"🔧 Clearing inbox for: {email_user}")
@@ -217,7 +217,8 @@ async def delete_all_courses_via_mcp(target_course_names):
             agent_workspace=str(workspace),
             config_dir=str(toolathlon_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session
+            local_token_key_session=local_token_key_session,
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
 
         # Connect to canvas server specifically
@@ -384,7 +385,7 @@ if __name__ == "__main__":
 
     # Execute email and Canvas operations (main preprocessing tasks)
 
-    imap_server = "136.119.166.94"
+    imap_server = "localhost"
     imap_port = 1143
     to_email = domain_str("mcpcanvasadmin3")  # Target inbox email
 

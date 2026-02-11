@@ -1,5 +1,5 @@
 {
-  "imap_server": "136.119.166.94",
+  "imap_server": "localhost",
   "imap_port": 1143,
   "use_ssl": false,
   "negative_accounts": [

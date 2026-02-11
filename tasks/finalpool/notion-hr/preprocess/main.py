@@ -49,12 +49,12 @@ async def main():
             # config be 
             """
             "password": "JsteuyatGI4v",
-            "imap_server": "136.119.166.94",
+            "imap_server": "localhost",
             "imap_port": 1143,
-            "smtp_server": "136.119.166.94",
+            "smtp_server": "localhost",
             "smtp_port": 1587,
             "use_ssl": false,
-            "use_starttls": true
+            "use_starttls": false
             """
             full_config = {"email": email_address, **config}
             clear_folder("INBOX",full_config)

@@ -293,7 +293,7 @@ def check_emails():
         # Complete necessary configuration keys
         cfg = dict(cfg)
         cfg.setdefault("email", rcpt)
-        cfg.setdefault("imap_server", "136.119.166.94")
+        cfg.setdefault("imap_server", "localhost")
         cfg.setdefault("imap_port", 1143)
         cfg.setdefault("use_ssl", False)
         cfg.setdefault("use_starttls", False)
@@ -310,7 +310,7 @@ def check_emails():
     for rcpt, cfg in shouldnt_receive_emails.items():
         cfg = dict(cfg)
         cfg.setdefault("email", rcpt)
-        cfg.setdefault("imap_server", "136.119.166.94")
+        cfg.setdefault("imap_server", "localhost")
         cfg.setdefault("imap_port", 1143)
         cfg.setdefault("use_ssl", False)
         cfg.setdefault("use_starttls", False)

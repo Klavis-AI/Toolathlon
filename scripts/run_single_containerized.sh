@@ -121,12 +121,9 @@ fi
 
 if [ ! -z "${KLAVIS_API_KEY+x}" ]; then
     EXTRA_ENV_ARGS+=("-e" "KLAVIS_API_KEY=${KLAVIS_API_KEY}")
+    KLAVIS_EMAIL_SERVER_HOST="136.119.166.94"
+    export KLAVIS_EMAIL_SERVER_HOST
     echo "Detected host KLAVIS_API_KEY, will pass into container"
-fi
-
-if [ ! -z "${KLAVIS_EMAIL_DOMAIN+x}" ]; then
-    EXTRA_ENV_ARGS+=("-e" "KLAVIS_EMAIL_DOMAIN=${KLAVIS_EMAIL_DOMAIN}")
-    echo "Detected host KLAVIS_EMAIL_DOMAIN=${KLAVIS_EMAIL_DOMAIN}, will pass into container"
 fi
 
 if [ ! -z "${KLAVIS_EMAIL_SERVER_HOST+x}" ]; then

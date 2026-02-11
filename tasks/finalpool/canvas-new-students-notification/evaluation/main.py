@@ -141,7 +141,8 @@ async def verify_messages_as_students(task_dir: Path, new_students_emails: list,
             agent_workspace=str(workspace),
             config_dir=str(project_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session
+            local_token_key_session=local_token_key_session,
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
 
         # Connect to canvas server
@@ -331,7 +332,8 @@ async def verify_messages_with_mcp(task_dir: Path, new_students_emails: list) ->
             agent_workspace=str(workspace),
             config_dir=str(project_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session
+            local_token_key_session=local_token_key_session,
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
 
         # Connect to canvas server
@@ -617,7 +619,8 @@ async def evaluate_canvas_notification_task(evaluator, student_expectations: dic
         agent_workspace=str(mapping_workspace),
         config_dir=str(project_root / "configs" / "mcp_servers"),
         debug=False,
-        local_token_key_session=local_token_key_session
+        local_token_key_session=local_token_key_session,
+        server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
     )
 
     # Connect to canvas server for mapping
