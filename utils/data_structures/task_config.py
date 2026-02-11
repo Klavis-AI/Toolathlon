@@ -6,6 +6,7 @@ from datetime import datetime
 
 from utils.general.helper import path_to_module, read_json
 import os
+import random
 
 @dataclass
 class SystemPrompts:
@@ -44,6 +45,7 @@ class SystemPrompts:
                 self.agent = self.agent.replace("!!<<<<||||current_working_dir||||>>>>!!", "/data")
                 self.agent = self.agent.replace("!!<<<<||||workspace_dir||||>>>>!!", "/data")
                 self.agent = self.agent.replace("!!<<<<||||workspace_dir_rela||||>>>>!!", ".")
+                self.agent += f"\nFor tasks involving emails, you MUST change the email domain from mcp.com to {os.environ.get('KLAVIS_EMAIL_DOMAIN')} for all email operations."
             else:
                 self.agent = self.agent.replace("!!<<<<||||current_working_dir||||>>>>!!", os.getcwd())
                 self.agent = self.agent.replace("!!<<<<||||workspace_dir||||>>>>!!", os.path.abspath(agent_workspace))
@@ -198,6 +200,13 @@ class TaskConfig:
             with open(task_str_path, 'r', encoding='utf-8') as f:
                 self.task_str = f.read()
 
+        # Set KLAVIS_EMAIL_DOMAIN early so that rewrite_domain and
+        # system_prompts.apply can reference it before sandbox acquisition.
+        if os.environ.get("KLAVIS_API_KEY") and self.needed_mcp_servers and "emails" in self.needed_mcp_servers:
+            if not os.environ.get("KLAVIS_EMAIL_DOMAIN"):
+                domain_number = random.randint(1, 110)
+                os.environ["KLAVIS_EMAIL_DOMAIN"] = f"mcp{domain_number}.com"
+
         # Rewrite @mcp.com in task_str to match the active email domain
         from utils.app_specific.poste.domain_utils import rewrite_domain
         self.task_str = rewrite_domain(self.task_str)
@@ -254,6 +263,19 @@ class TaskConfig:
 
         # if self.local_token_key_session is None:
         #     # Dynamically load the module if necessary
+
+    @staticmethod
+    def _find_emails_config_file(task_source_dir: str) -> Optional[str]:
+        """Find the emails config file in a task source directory."""
+        candidates = [
+            os.path.join(task_source_dir, "email_config.json"),
+            os.path.join(task_source_dir, "emails_config.json"),
+            os.path.join(task_source_dir, "files", "poste.json"),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+        return None
 
     def load_local_token_key_session(self) -> None:
         token_key_session_path = str(Path("tasks") / self.task_dir / "token_key_session.py")

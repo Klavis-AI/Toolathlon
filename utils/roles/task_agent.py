@@ -1,4 +1,3 @@
-import random
 from re import I
 from typing import Any, Optional, Dict, List, Tuple, Callable
 import os
@@ -428,22 +427,19 @@ class TaskAgent:
             # Build per-server extra params (e.g. email address for poste)
             server_extra_params = {}
             if "emails" in self.task_config.needed_mcp_servers:
-                # Find email config file directly from task source directory
-                # (without loading full token_key_session.py, which may have
-                # side effects that depend on preprocess)
-                domain_number = random.randint(1, 110)  # to avoid potential conflicts in poste sandboxes
+                # KLAVIS_EMAIL_DOMAIN is set early in TaskConfig.__post_init__.
+                # Read it back here to build the modified email for the sandbox.
                 task_source_dir = str(Path("tasks") / self.task_config.task_dir)
                 emails_config_file = self._find_emails_config_file(task_source_dir)
-                if emails_config_file and os.path.exists(emails_config_file):
+                klavis_domain = os.environ.get("KLAVIS_EMAIL_DOMAIN")
+                if emails_config_file and os.path.exists(emails_config_file) and klavis_domain:
                     try:
                         with open(emails_config_file, 'r') as f:
                             email_config = json.load(f)
                         email_addr = email_config.get("email")
                         if email_addr and "@" in email_addr:
-                            prefix, domain = email_addr.split("@", 1)
-                            domain_name, domain_ext = domain.rsplit(".", 1)
-                            modified_email = f"{prefix}@{domain_name}{domain_number}.{domain_ext}"
-                            os.environ["KLAVIS_EMAIL_DOMAIN"] = f"{domain_name}{domain_number}.{domain_ext}"
+                            prefix, _ = email_addr.split("@", 1)
+                            modified_email = f"{prefix}@{klavis_domain}"
                             server_extra_params["emails"] = {"test_account_email": modified_email}
                             if self.debug:
                                 print_color(f"[Klavis] Change email from '{email_addr}' to '{modified_email}' in {emails_config_file} for poste sandbox", "blue")

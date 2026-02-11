@@ -54,7 +54,6 @@ class KlavisSandbox:
         body = {"benchmark": "Toolathlon"}
         if extra_params:
             body.update(extra_params)
-        print(f"[Klavis] Acquiring sandbox for '{server_name}' with body: {body}")
         try:
             resp = httpx.post(url, json=body, headers=headers, timeout=60)
             resp.raise_for_status()
@@ -90,7 +89,7 @@ class KlavisSandbox:
         other_servers = [n for n in server_names if n not in LOCAL_DEV_SERVER_NAMES]
 
         # Acquire a single local_dev sandbox for all local_dev-mapped servers
-        if False:
+        if local_dev_requested:
             result = self.acquire("local_dev")
             if result and result.get("server_urls"):
                 api_urls: Dict[str, str] = result["server_urls"]
@@ -105,8 +104,6 @@ class KlavisSandbox:
 
         # Acquire individual sandboxes for non-local_dev servers
         for name in other_servers:
-            if name == "memory":
-                continue
             sandbox_name = TASK_SERVER_TO_SANDBOX_NAME.get(name, name)
             result = self.acquire(sandbox_name, extra_params=server_extra_params.get(name))
             if result and result.get("server_urls"):
