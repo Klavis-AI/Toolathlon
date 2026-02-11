@@ -1,3 +1,4 @@
+import json
 from typing import List, Dict, Optional, Union, Any
 import asyncio
 import os
@@ -54,6 +55,15 @@ class MCPServerManager:
         self._load_servers_from_configs(config_dir)
 
         # Apply Klavis sandbox overrides (replace local configs with remote URLs)
+        try:
+            with open(os.path.join('configs', "klavis_server_url_overrides.json"), "r") as f:
+                klavis_server_url_overrides = json.load(f)
+                print(f">>Loaded Klavis server URL overrides: {klavis_server_url_overrides}")
+                if klavis_server_url_overrides and not server_url_overrides:
+                    server_url_overrides = klavis_server_url_overrides
+        except Exception as e:
+            print(f"Warning: Failed to load Klavis server URL overrides: {e}")
+
         if server_url_overrides:
             for name, url in server_url_overrides.items():
                 self.servers[name] = MCPServerStreamableHttp(
