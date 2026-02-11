@@ -472,7 +472,7 @@ async def specifical_inialize_for_mcp(task_config):
         print("[playwright] playwright file output dir has been established")
 
     # Multi-instance email domain isolation:
-    # Rewrite @mcp.com → @{TOOLATHLON_EMAIL_DOMAIN} in all text files within agent_workspace.
+    # Rewrite @mcp.com → @{KLAVIS_EMAIL_DOMAIN} in all text files within agent_workspace.
     # This covers initial_workspace files copied for the agent (JSON, CSV, TXT, etc.).
     from utils.app_specific.poste.domain_utils import get_email_domain, DEFAULT_DOMAIN
     email_domain = get_email_domain()

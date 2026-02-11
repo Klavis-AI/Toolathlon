@@ -20,8 +20,8 @@ except:
     print('')
 " 2>/dev/null || echo "")
 
-# Allow override via TOOLATHLON_EMAIL_DOMAIN env var for multi-instance setups
-DOMAIN="${TOOLATHLON_EMAIL_DOMAIN:-mcp.com}"
+# Allow override via KLAVIS_EMAIL_DOMAIN env var for multi-instance setups
+DOMAIN="${KLAVIS_EMAIL_DOMAIN:-mcp.com}"
 CONTAINER_NAME="poste${instance_suffix}"
 CONFIG_DIR="$(dirname "$0")/../configs"
 ACCOUNTS_FILE="$CONFIG_DIR/created_accounts.json"

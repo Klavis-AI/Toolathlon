@@ -124,9 +124,14 @@ if [ ! -z "${KLAVIS_API_KEY+x}" ]; then
     echo "Detected host KLAVIS_API_KEY, will pass into container"
 fi
 
-if [ ! -z "${TOOLATHLON_EMAIL_DOMAIN+x}" ]; then
-    EXTRA_ENV_ARGS+=("-e" "TOOLATHLON_EMAIL_DOMAIN=${TOOLATHLON_EMAIL_DOMAIN}")
-    echo "Detected host TOOLATHLON_EMAIL_DOMAIN=${TOOLATHLON_EMAIL_DOMAIN}, will pass into container"
+if [ ! -z "${KLAVIS_EMAIL_DOMAIN+x}" ]; then
+    EXTRA_ENV_ARGS+=("-e" "KLAVIS_EMAIL_DOMAIN=${KLAVIS_EMAIL_DOMAIN}")
+    echo "Detected host KLAVIS_EMAIL_DOMAIN=${KLAVIS_EMAIL_DOMAIN}, will pass into container"
+fi
+
+if [ ! -z "${KLAVIS_EMAIL_SERVER_HOST+x}" ]; then
+    echo "Detected host KLAVIS_EMAIL_SERVER_HOST=${KLAVIS_EMAIL_SERVER_HOST}"
+    echo "Will set up socat forwarders for SMTP(1587) and IMAP(1143) inside container"
 fi
 
 # Detect TOOLATHLON_MODEL_PARAMS_FILE - will copy file and set container path later
@@ -431,6 +436,25 @@ if $CONTAINER_RUNTIME exec --env DOCKER_API_VERSION=1.44 "$CONTAINER_NAME" $CONT
 else
     echo "✗ Cannot access $CONTAINER_RUNTIME API"
     exit 1
+fi
+
+# Step 2.8: Set up socat forwarders for SMTP/IMAP if KLAVIS_EMAIL_SERVER_HOST is set
+if [ ! -z "${KLAVIS_EMAIL_SERVER_HOST+x}" ]; then
+    echo ""
+    echo "Step 2.8: Setting up socat port forwarders for email (SMTP/IMAP)..."
+    echo "  Forwarding localhost:1587 -> ${KLAVIS_EMAIL_SERVER_HOST}:1587 (SMTP)"
+    echo "  Forwarding localhost:1143 -> ${KLAVIS_EMAIL_SERVER_HOST}:1143 (IMAP)"
+
+    # Install socat if not available
+    $CONTAINER_RUNTIME exec "$CONTAINER_NAME" bash -c "command -v socat >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq socat >/dev/null 2>&1)" || {
+        echo "Warning: Failed to ensure socat is installed in container"
+    }
+
+    # Start socat forwarders in background inside the container
+    $CONTAINER_RUNTIME exec -d "$CONTAINER_NAME" socat TCP-LISTEN:1587,fork,reuseaddr TCP:${KLAVIS_EMAIL_SERVER_HOST}:1587
+    $CONTAINER_RUNTIME exec -d "$CONTAINER_NAME" socat TCP-LISTEN:1143,fork,reuseaddr TCP:${KLAVIS_EMAIL_SERVER_HOST}:1143
+
+    echo "✓ socat forwarders started"
 fi
 
 # Step 3: Execute task command in container

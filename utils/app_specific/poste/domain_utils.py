@@ -3,7 +3,7 @@ Email domain utilities for multi-instance isolation.
 
 When running multiple Toolathlon instances in parallel, each instance uses a 
 separate email domain (e.g., mcp1.com, mcp2.com, ...) to avoid cross-instance
-interference. The domain is controlled by the TOOLATHLON_EMAIL_DOMAIN env var.
+interference. The domain is controlled by the KLAVIS_EMAIL_DOMAIN env var.
 
 Usage in evaluation/preprocess scripts:
 
@@ -27,13 +27,13 @@ from typing import Any
 DEFAULT_DOMAIN = "mcp.com"
 
 # ─── Env var name ────────────────────────────────────────────────────────────
-ENV_VAR = "TOOLATHLON_EMAIL_DOMAIN"
+ENV_VAR = "KLAVIS_EMAIL_DOMAIN"
 
 
 def get_email_domain() -> str:
     """Return the email domain for this instance.
     
-    Reads from TOOLATHLON_EMAIL_DOMAIN env var; falls back to 'mcp.com'.
+    Reads from KLAVIS_EMAIL_DOMAIN env var; falls back to 'mcp.com'.
     """
     return os.environ.get(ENV_VAR, DEFAULT_DOMAIN)
 

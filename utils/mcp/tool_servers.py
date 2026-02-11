@@ -160,7 +160,7 @@ class MCPServerManager:
                     template_vars[f'token.{key}'] = str(value)
 
         # Multi-instance email domain isolation:
-        # When TOOLATHLON_EMAIL_DOMAIN is set, create a domain-rewritten copy of the
+        # create a domain-rewritten copy of the
         # email config file so the MCP email tool connects to the correct domain.
         from utils.app_specific.poste.domain_utils import get_email_domain, DEFAULT_DOMAIN
         email_domain = get_email_domain()
