@@ -5,7 +5,6 @@ from googleapiclient.discovery import build
 from datetime import datetime
 import time
 
-GOOGLE_CREDENTIAL_FILE = "configs/google_credentials.json"
 
 def clear_google_forms(form_name_pattern: str = None) -> Dict:
     """
@@ -21,16 +20,18 @@ def clear_google_forms(form_name_pattern: str = None) -> Dict:
     
     try:
         try:
-            with open(GOOGLE_CREDENTIAL_FILE, 'r') as f:
+            credentials_file = "configs/google_forms_credentials.json"
+    
+            with open(credentials_file, 'r') as f:
                 cred_data = json.load(f)
-            
+            scopes = cred_data.get('scope', '').split()
             creds = Credentials(
-                token=cred_data['token'],
+                token=cred_data['access_token'],
                 refresh_token=cred_data['refresh_token'],
-                token_uri=cred_data['token_uri'],
+                token_uri="https://oauth2.googleapis.com/token",
                 client_id=cred_data['client_id'],
                 client_secret=cred_data['client_secret'],
-                scopes=cred_data['scopes']
+                scopes=scopes
             )
             
         except Exception as e:
