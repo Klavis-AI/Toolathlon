@@ -79,7 +79,7 @@ def clear_inbox(imap_server, imap_port, email_user=None, email_pass=None, mailbo
             "imap_server": imap_server,
             "imap_port": imap_port,
             "use_ssl": False,  # Canvas Art Manager uses non-SSL
-            "use_starttls": False
+            "use_starttls": True
         }
 
         print(f"🔧 Clearing inbox for: {email_user}")
@@ -384,7 +384,7 @@ if __name__ == "__main__":
 
     # Execute email and Canvas operations (main preprocessing tasks)
 
-    imap_server = "localhost"
+    imap_server = "136.119.166.94"
     imap_port = 1143
     to_email = domain_str("mcpcanvasadmin3")  # Target inbox email
 

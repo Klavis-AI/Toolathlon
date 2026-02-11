@@ -99,9 +99,9 @@ if __name__ == "__main__":
         "email": "rkelly27@mcp.com",
         "password": "ronald_81q2O", 
         "name": "Ronald Kelly",
-        "imap_server": "localhost",
+        "imap_server": "136.119.166.94",
         "imap_port": 1143,
-        "smtp_server": "localhost",
+        "smtp_server": "136.119.166.94",
         "smtp_port": 1587
     })
     # To clean all default folders (INBOX, Sent, Trash, Junk, Drafts)

@@ -2,10 +2,10 @@
     "email": "mitchelle75@mcp.com",
     "password": "mitchell$e852", 
     "name": "Emma Mitchell",
-    "imap_server": "localhost",
+    "imap_server": "136.119.166.94",
     "imap_port": 1143,
-    "smtp_server": "localhost",
+    "smtp_server": "136.119.166.94",
     "smtp_port": 1587,
     "use_ssl": false,
-    "use_starttls": false
+    "use_starttls": true
 }

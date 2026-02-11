@@ -63,7 +63,7 @@ def clear_mailbox() -> Dict:
             print(f"⚠️ Failed to read email config file, using default config: {e}")
             email_address = f'admin@{get_email_domain()}'
             email_password = 'admin_password'
-            imap_server = 'localhost'
+            imap_server = '136.119.166.94'
             imap_port = 1143
 
         # Connect to IMAP server

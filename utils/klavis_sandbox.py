@@ -36,8 +36,12 @@ class KlavisSandbox:
             raise ValueError("KLAVIS_API_KEY is required")
         self.acquired_sandboxes: List[Dict] = []
 
-    def acquire(self, server_name: str) -> Optional[Dict]:
+    def acquire(self, server_name: str, extra_params: Optional[Dict] = None) -> Optional[Dict]:
         """Acquire a sandbox for a given MCP server.
+        
+        Args:
+            server_name: The name of the server to acquire a sandbox for.
+            extra_params: Optional extra parameters to include in the request body.
         
         Returns response dict with sandbox_id, server_urls, etc. or None on failure.
         """
@@ -46,8 +50,11 @@ class KlavisSandbox:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+        body = {"benchmark": "Toolathlon"}
+        if extra_params:
+            body.update(extra_params)
         try:
-            resp = httpx.post(url, json={"benchmark": "Toolathlon"}, headers=headers, timeout=60)
+            resp = httpx.post(url, json=body, headers=headers, timeout=60)
             resp.raise_for_status()
             data = resp.json()
             self.acquired_sandboxes.append(data)
@@ -56,8 +63,13 @@ class KlavisSandbox:
             print(f"[Klavis] Failed to acquire sandbox for '{server_name}': {e}")
             return None
 
-    def acquire_for_servers(self, server_names: List[str]) -> Dict[str, str]:
+    def acquire_for_servers(self, server_names: List[str], server_extra_params: Optional[Dict[str, Dict]] = None) -> Dict[str, str]:
         """Acquire sandboxes for multiple servers.
+        
+        Args:
+            server_names: List of server names to acquire sandboxes for.
+            server_extra_params: Optional dict mapping server_name -> extra params
+                to include in the acquire request body for that server.
         
         Returns a dict mapping server_name -> streamable-http URL for servers
         that were successfully acquired. Servers that fail are silently skipped.
@@ -67,6 +79,8 @@ class KlavisSandbox:
         ``server_urls`` are then mapped back to the *original* task server
         names so that downstream consumers see the keys they expect.
         """
+        if server_extra_params is None:
+            server_extra_params = {}
         overrides = {}
 
         # Partition requested servers into local_dev vs. others
@@ -90,7 +104,7 @@ class KlavisSandbox:
         # Acquire individual sandboxes for non-local_dev servers
         for name in other_servers:
             sandbox_name = TASK_SERVER_TO_SANDBOX_NAME.get(name, name)
-            result = self.acquire(sandbox_name)
+            result = self.acquire(sandbox_name, extra_params=server_extra_params.get(name))
             if result and result.get("server_urls"):
                 for sname, surl in result["server_urls"].items():  # ideally only 1 server for non-local_dev
                     key = name if sname == sandbox_name else sname

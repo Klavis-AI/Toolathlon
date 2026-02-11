@@ -397,6 +397,22 @@ class TaskAgent:
         self._debug_print(f"Successfully initialize workspace for {self.task_config.id}!")
         return True
 
+    def _find_emails_config_file(self, task_source_dir: str) -> Optional[str]:
+        """Find the emails config file in a task source directory.
+        
+        Searches for common email config filenames without loading the full
+        token_key_session.py (which may have side effects that depend on preprocess).
+        """
+        candidates = [
+            os.path.join(task_source_dir, "email_config.json"),
+            os.path.join(task_source_dir, "emails_config.json"),
+            os.path.join(task_source_dir, "files", "poste.json"),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+        return None
+
     async def acquire_klavis_sandboxes(self) -> None:
         """Acquire Klavis remote MCP sandboxes if KLAVIS_API_KEY is set.
         
@@ -407,10 +423,32 @@ class TaskAgent:
         klavis_api_key = os.environ.get("KLAVIS_API_KEY")
         if klavis_api_key and self.task_config.needed_mcp_servers:
             from utils.klavis_sandbox import KlavisSandbox
+
+            # Build per-server extra params (e.g. email address for poste)
+            server_extra_params = {}
+            if "poste_email_toolathon" in self.task_config.needed_mcp_servers:
+                # Find email config file directly from task source directory
+                # (without loading full token_key_session.py, which may have
+                # side effects that depend on preprocess)
+                task_source_dir = str(Path("tasks") / self.task_config.task_dir)
+                emails_config_file = self._find_emails_config_file(task_source_dir)
+                if emails_config_file and os.path.exists(emails_config_file):
+                    try:
+                        with open(emails_config_file, 'r') as f:
+                            email_config = json.load(f)
+                        email_addr = email_config.get("email")
+                        if email_addr:
+                            server_extra_params["poste_email_toolathon"] = {"email": email_addr}
+                            if self.debug:
+                                print_color(f"[Klavis] Read email '{email_addr}' from {emails_config_file} for poste sandbox", "blue")
+                    except Exception as e:
+                        print_color(f"[Klavis] Failed to read email config from {emails_config_file}: {e}", "yellow")
+
             try:
                 self._klavis_client = KlavisSandbox(api_key=klavis_api_key)
                 self._server_url_overrides = self._klavis_client.acquire_for_servers(
                     self.task_config.needed_mcp_servers,
+                    server_extra_params=server_extra_params,
                 )
                 if self._server_url_overrides and self.debug:
                     print_color(f"[Klavis] Using remote sandboxes for: {list(self._server_url_overrides.keys())}", "blue")

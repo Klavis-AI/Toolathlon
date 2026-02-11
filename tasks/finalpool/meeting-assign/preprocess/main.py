@@ -38,11 +38,11 @@ if __name__=="__main__":
         "email": "jjones@mcp.com",
         "password": "jessica1987%",
         "name": "Meeting Assignment Agent",
-        "imap_server": "localhost",
+        "imap_server": "136.119.166.94",
         "imap_port": 1143,
-        "smtp_server": "localhost",
+        "smtp_server": "136.119.166.94",
         "smtp_port": 1587,
         "use_ssl": False,
-        "use_starttls": False
+        "use_starttls": True
     })
     clean_emails(receiver_config)

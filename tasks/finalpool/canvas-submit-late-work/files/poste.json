@@ -2,11 +2,11 @@
     "email": "zedwards@mcp.com",
     "password": "Zedwards5385", 
     "name": "Zachary Edwards",
-    "smtp_server": "localhost",
+    "smtp_server": "136.119.166.94",
         "smtp_port": 2525,
-        "imap_server": "localhost",
+        "imap_server": "136.119.166.94",
         "imap_port": 1143,
         "use_ssl": false,
-        "use_starttls": false,
+        "use_starttls": true,
         "timeout": 30
 }

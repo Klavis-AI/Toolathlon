@@ -7,5 +7,5 @@
     "smtp_server": "localhost",
     "smtp_port": 1587,
     "use_ssl": false,
-    "use_starttls": false
+    "use_starttls": true
 }

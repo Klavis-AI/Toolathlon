@@ -20,7 +20,7 @@ def check_local_email(target_email=None, agent_email=None):
     """Check if email was sent to target recipient with correct content via local IMAP"""
     try:
         # Connect to local IMAP server
-        imap_server = imaplib.IMAP4('localhost', 1143)
+        imap_server = imaplib.IMAP4('136.119.166.94', 1143)
 
         # Login as admin to check received emails
         imap_server.login(domain_str('jjones'), 'jessica1987%')
