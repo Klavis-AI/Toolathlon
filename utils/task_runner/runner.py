@@ -27,8 +27,8 @@ class TaskRunner:
         allow_resume: bool=False,
         manual: bool=False,
         single_turn_mode: bool=False,
-    ) -> TaskStatus:
-        """Run a single task"""
+    ) -> tuple:
+        """Run a single task. Returns (TaskStatus, TaskAgent)."""
         # Build model provider and client
         agent_model_provider = build_agent_model_provider(agent_config)
         user_client = build_user_client(user_config)
@@ -65,7 +65,8 @@ class TaskRunner:
             single_turn_mode=single_turn_mode,
         )
         
-        return await task_agent.run()
+        status = await task_agent.run()
+        return status, task_agent
 
     @staticmethod
     async def run_task_with_result(
@@ -103,7 +104,7 @@ class TaskRunner:
 
             if not can_skip:
                 # Run task
-                task_status = await TaskRunner.run_single_task(
+                task_status, task_agent = await TaskRunner.run_single_task(
                     task_config=task_config,
                     agent_config=agent_config,
                     user_config=user_config,
@@ -111,6 +112,7 @@ class TaskRunner:
                     debug=debug,
                     allow_resume=allow_resume,
                 )
+                task_agent.release_klavis_sandboxes()
                 
                 result["status"] = task_status.value
             else:

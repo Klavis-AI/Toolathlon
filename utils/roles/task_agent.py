@@ -932,6 +932,9 @@ class TaskAgent:
         """Release resources and disconnect MCP servers."""
         if self.mcp_manager:
             await self.mcp_manager.disconnect_servers()
+
+    def release_klavis_sandboxes(self) -> None:
+        """Release Klavis sandboxes. Call after evaluation is complete."""
         if getattr(self, '_klavis_client', None):
             self._klavis_client.release_all()
     
