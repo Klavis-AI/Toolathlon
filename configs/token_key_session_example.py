@@ -52,7 +52,7 @@ all_token_key_session = Dict(
     google_cloud_allowed_instances = "null",
 
     #### Github
-    github_token = "XX", # TO BE FILLED
+    github_token = os.environ.get("KLAVIS_GITHUB_TOKEN", "XX"), # TO BE FILLED
     github_allowed_repos = "null", # KEEP_IT_ASIS_CUZ_IT_WILL_BE_RESET_IN_TASK_SPECIFIC_DIR
     github_read_only = "1", # default to ban write, but the tasks should open it if needed
     

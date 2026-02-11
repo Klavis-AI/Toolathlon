@@ -449,7 +449,7 @@ class TaskAgent:
                                 if val is not None:
                                     os.environ[env_var] = str(val)
                             if self.debug:
-                                print_color(f"[Klavis] Sandbox config updated: {list(os.environ.keys())}", "blue")
+                                print_color(f"[Klavis] Sandbox config updated for {server_name}: {list(os.environ.keys())}", "blue")
                     except Exception as e:
                         print_color(f"[Klavis] Failed to update config from sandbox details: {e}", "red")
                 if server_name == "google_sheets":
@@ -483,7 +483,19 @@ class TaskAgent:
                             if val is not None:
                                 os.environ[env_var] = str(val)
                         if self.debug:
-                            print_color(f"[Klavis] Sandbox config updated: {list(os.environ.keys())}", "blue")
+                            print_color(f"[Klavis] Sandbox config updated for {server_name}: {list(os.environ.keys())}", "blue")
+                if server_name == "github":
+                    details = self._klavis_client.get_sandbox_details(server_name, sb["sandbox_id"])
+                    auth_data = details.get("auth_data", {})
+                    if auth_data:
+                        for key, env_var in [
+                            ("access_token", "KLAVIS_GITHUB_TOKEN")
+                        ]:
+                            val = auth_data.get(key)
+                            if val is not None:
+                                os.environ[env_var] = str(val)
+                        if self.debug:
+                            print_color(f"[Klavis] Sandbox config updated for {server_name}: {list(os.environ.keys())}", "blue")
 
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""
