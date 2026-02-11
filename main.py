@@ -67,7 +67,7 @@ async def main():
 
     # Run task
     print_color("====== Starting Task Execution ======", "yellow")
-    task_status = await TaskRunner.run_single_task(
+    task_status, task_agent = await TaskRunner.run_single_task(
         task_config=task_config,
         agent_config=agent_config,
         user_config=user_config,
@@ -87,6 +87,9 @@ async def main():
     dump_line = read_json(log_file)
     eval_res = await TaskEvaluator.evaluate_from_log_file(log_file, allow_resume=args.allow_resume)
     
+    # Release Klavis sandboxes at the end
+    task_agent.release_klavis_sandboxes()
+
     print_color(f"\n====== Evaluation Results ======", "yellow")
     print(f"Pass: {eval_res.get('pass', False)}")
     print(f"Key statistics: {dump_line.get('key_stats', 'N/A')}")
