@@ -200,12 +200,38 @@ create_users_instance() {
   echo "✅ Users created for instance $idx ($counter users)"
 }
 
+# ── Wait for Poste.io database to be ready ──────────────────────────
+wait_for_ready() {
+  local idx=$1
+  local container_name=$(get_container_name "$idx")
+  local max_attempts=60   # up to 120 seconds
+  local attempt=0
+
+  echo "⏳ Waiting for instance $idx database to initialize..."
+  while [ $attempt -lt $max_attempts ]; do
+    # Check if the domain:list command works (means DB is ready)
+    if $DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>/dev/null | head -1 > /dev/null 2>&1; then
+      # Verify it doesn't throw "no such table" by checking exit code on a real query
+      local output
+      output=$($DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>&1)
+      if ! echo "$output" | grep -q "no such table"; then
+        echo "✅ Instance $idx database ready (took ~$((attempt * 2))s)"
+        return 0
+      fi
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
+
+  echo "⚠️  Instance $idx: timed out waiting for database (120s)"
+  return 1
+}
+
 # ── Full setup for a single instance (start + configure + users) ────
 full_setup_instance() {
   local idx=$1
   start_instance "$idx"
-  echo "⏳ Waiting for instance $idx services to initialize..."
-  sleep 12
+  wait_for_ready "$idx"
   if [ "$CONFIGURE_DOVECOT" = "true" ]; then
     configure_instance "$idx"
   fi
