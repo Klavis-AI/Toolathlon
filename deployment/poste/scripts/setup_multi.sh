@@ -212,7 +212,8 @@ wait_for_ready() {
   while [ $attempt -lt $max_attempts ]; do
     local http_code
     http_code=$($DOCKER exec "$container_name" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/ 2>/dev/null || echo "000")
-    if [ "$http_code" != "000" ]; then
+    # Match any valid HTTP response code (1xx-5xx); reject "000" or other non-HTTP outputs
+    if [[ "$http_code" =~ ^[1-5][0-9][0-9]$ ]]; then
       echo "  ✓ [${idx}] Web server up (HTTP $http_code, ~$((attempt * 2))s)"
       break
     fi
