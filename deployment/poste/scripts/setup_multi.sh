@@ -200,31 +200,63 @@ create_users_instance() {
   echo "✅ Users created for instance $idx ($counter users)"
 }
 
-# ── Wait for Poste.io database to be ready ──────────────────────────
+# ── Wait for web server and initialize database ────────────────────
 wait_for_ready() {
   local idx=$1
   local container_name=$(get_container_name "$idx")
-  local max_attempts=60   # up to 120 seconds
+  local max_attempts=90   # up to 180 seconds
   local attempt=0
 
-  echo "⏳ Waiting for instance $idx database to initialize..."
+  # Phase 1: Wait for internal web server to come up
+  echo "⏳ [${idx}] Waiting for web server..."
   while [ $attempt -lt $max_attempts ]; do
-    # Check if the domain:list command works (means DB is ready)
-    if $DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>/dev/null | head -1 > /dev/null 2>&1; then
-      # Verify it doesn't throw "no such table" by checking exit code on a real query
-      local output
-      output=$($DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>&1)
-      if ! echo "$output" | grep -q "no such table"; then
-        echo "✅ Instance $idx database ready (took ~$((attempt * 2))s)"
-        return 0
-      fi
+    local http_code
+    http_code=$($DOCKER exec "$container_name" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/ 2>/dev/null || echo "000")
+    if [ "$http_code" != "000" ]; then
+      echo "  ✓ [${idx}] Web server up (HTTP $http_code, ~$((attempt * 2))s)"
+      break
     fi
     attempt=$((attempt + 1))
     sleep 2
   done
+  if [ $attempt -ge $max_attempts ]; then
+    echo "⚠️  [${idx}] Web server not responding after 180s"
+    return 1
+  fi
 
-  echo "⚠️  Instance $idx: timed out waiting for database (120s)"
-  return 1
+  # Phase 2: Check if DB is already initialized (has domains table)
+  local output
+  output=$($DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>&1)
+  if ! echo "$output" | grep -q "no such table"; then
+    echo "✅ [${idx}] Database already initialized"
+    return 0
+  fi
+
+  # Phase 3: Delete partial DB and create schema from scratch
+  # Poste.io creates a partial DB on startup (webauthn, guard, etc.) but
+  # misses critical tables (domains, emails). Deleting and recreating fixes this.
+  echo "  → [${idx}] Initializing database schema..."
+  $DOCKER exec "$container_name" rm -f /data/users.db 2>/dev/null || true
+  $DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console doctrine:schema:create --no-interaction 2>/dev/null || true
+  sleep 2
+
+  # Verify schema was created
+  output=$($DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>&1)
+  if echo "$output" | grep -q "no such table"; then
+    echo "⚠️  [${idx}] doctrine:schema:create failed, retrying..."
+    $DOCKER exec "$container_name" rm -f /data/users.db 2>/dev/null || true
+    sleep 3
+    $DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console doctrine:schema:create --no-interaction 2>/dev/null || true
+    sleep 2
+    output=$($DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>&1)
+    if echo "$output" | grep -q "no such table"; then
+      echo "⚠️  [${idx}] DB schema could not be created. Output: $output"
+      return 1
+    fi
+  fi
+
+  echo "✅ [${idx}] Database schema created"
+  return 0
 }
 
 # ── Full setup for a single instance (start + configure + users) ────
