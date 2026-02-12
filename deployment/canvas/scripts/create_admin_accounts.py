@@ -5,14 +5,11 @@
 import json
 import subprocess
 import os
-import sys
 import time
 from datetime import datetime
 
 from argparse import ArgumentParser
 from configs.global_configs import global_configs
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-from utils.app_specific.poste.domain_utils import get_email_domain
 parser = ArgumentParser()
 parser.add_argument("--container-name", type=str, default="canvas-docker")
 args = parser.parse_args()
@@ -27,7 +24,7 @@ def create_admin_accounts():
         {
             'name': 'MCP Canvas Admin 1',
             'short_name': 'Admin1',
-            'email': f'mcpcanvasadmin1@{get_email_domain()}',
+            'email': 'mcpcanvasadmin1@mcp.com',
             'password': 'mcpcanvasadminpass1',
             'canvas_token': 'mcpcanvasadmintoken1',
             'sis_user_id': 'ADMIN001'
@@ -35,7 +32,7 @@ def create_admin_accounts():
         {
             'name': 'MCP Canvas Admin 2', 
             'short_name': 'Admin2',
-            'email': f'mcpcanvasadmin2@{get_email_domain()}',
+            'email': 'mcpcanvasadmin2@mcp.com',
             'password': 'mcpcanvasadminpass2',
             'canvas_token': 'mcpcanvasadmintoken2',
             'sis_user_id': 'ADMIN002'
@@ -43,7 +40,7 @@ def create_admin_accounts():
         {
             'name': 'MCP Canvas Admin 3',
             'short_name': 'Admin3', 
-            'email': f'mcpcanvasadmin3@{get_email_domain()}',
+            'email': 'mcpcanvasadmin3@mcp.com',
             'password': 'mcpcanvasadminpass3',
             'canvas_token': 'mcpcanvasadmintoken3',
             'sis_user_id': 'ADMIN003'

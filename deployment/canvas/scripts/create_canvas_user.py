@@ -14,14 +14,10 @@
 import json
 import subprocess
 import os
-import sys
 import time
 import argparse
 from datetime import datetime
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from configs.global_configs import global_configs
-from utils.app_specific.poste.domain_utils import rewrite_domain
 
 BUNDLE_PATH = "/opt/canvas/.gems/bin/bundle"
 CANVAS_DIR = "/opt/canvas/canvas-lms"
@@ -86,7 +82,7 @@ def load_users_from_json(start_id=None, end_id=None):
     """Load users from configs/users_data.json, support filtering by ID range"""
     try:
         with open('configs/users_data.json', 'r', encoding='utf-8') as f:
-            data = rewrite_domain(json.load(f))
+            data = json.load(f)
         
         users = []
         for user in data['users']:

@@ -68,7 +68,7 @@ start_container() {
     -e "HTTPS_FORCE=0" \
     -e "HTTPS=OFF" \
     -v ${DATA_DIR}:/data:Z \
-    --hostname ${KLAVIS_EMAIL_DOMAIN:-mcp.com} \
+    --hostname mcp.com \
     analogic/poste.io:2.5.5
 
   # Check start status
