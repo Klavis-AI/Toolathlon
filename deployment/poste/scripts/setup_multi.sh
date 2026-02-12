@@ -316,10 +316,10 @@ stop_all() {
     return 0
   fi
 
-  echo "$running" | while read -r name; do
+  while read -r name; do
     local idx=${name#poste-}
     stop_instance "$idx" &
-  done
+  done <<< "$running"
   wait
 
   echo "✅ All instances stopped"
