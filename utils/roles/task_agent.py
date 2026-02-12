@@ -536,6 +536,22 @@ class TaskAgent:
                                 os.environ[env_var] = str(val)
                         if self.debug:
                             print_color(f"[Klavis] Sandbox config updated for {server_name}: {list(os.environ.keys())}", "blue")
+                if server_name == "snowflake":
+                    details = self._klavis_client.get_sandbox_details(server_name, sb["sandbox_id"])
+                    auth_data = details.get("auth_data", {})
+                    if auth_data:
+                        for key, env_var in [
+                            ("SNOWFLAKE_ACCOUNT", "KLAVIS_SNOWFLAKE_ACCOUNT"),
+                            ("SNOWFLAKE_WAREHOUSE", "KLAVIS_SNOWFLAKE_WAREHOUSE"),
+                            ("SNOWFLAKE_ROLE", "KLAVIS_SNOWFLAKE_ROLE"),
+                            ("SNOWFLAKE_USER", "KLAVIS_SNOWFLAKE_USER"),
+                            ("SNOWFLAKE_PRIVATE_KEY", "KLAVIS_SNOWFLAKE_PRIVATE_KEY"),
+                            ("SNOWFLAKE_DATABASE", "KLAVIS_SNOWFLAKE_DATABASE"),
+                            ("SNOWFLAKE_SCHEMA", "KLAVIS_SNOWFLAKE_SCHEMA"),
+                        ]:
+                            val = auth_data.get(key)
+                            if val is not None:
+                                os.environ[env_var] = str(val)
 
     async def setup_mcp_servers(self, local_token_key_session: Dict) -> None:
         """Setup and connect to MCP servers."""

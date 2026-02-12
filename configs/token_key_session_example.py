@@ -72,13 +72,14 @@ all_token_key_session = Dict(
     # notion_allowed_page_ids="XX", # KEEP_IT_ASIS_CUZ_IT_WILL_BE_RESET_IN_TASK_SPECIFIC_DIR
 
     #### SnowFlake
-    snowflake_account = "XX", # TO BE FILLED
-    snowflake_warehouse = "COMPUTE_WH", # usually `COMPUTE_WH`
-    snowflake_role = "ACCOUNTADMIN", # TO BE FILLED
-    snowflake_user = "XX", # TO BE FILLED
-    snowflake_private_key_path = snowflake_private_key_path, # TO BE FILLED
-    snowflake_database = "SNOWFLAKE", # we prefill `SNOWFLAKE` here to make compatibility
-    snowflake_schema = "PUBLIC", # we prefill `PUBLIC` here to make compatibility
+    snowflake_account = os.environ.get("KLAVIS_SNOWFLAKE_ACCOUNT", "XX"), # TO BE FILLED
+    snowflake_warehouse = os.environ.get("KLAVIS_SNOWFLAKE_WAREHOUSE", "COMPUTE_WH"), # usually `COMPUTE_WH`
+    snowflake_role = os.environ.get("KLAVIS_SNOWFLAKE_ROLE", "ACCOUNTADMIN"), # TO BE FILLED
+    snowflake_user = os.environ.get("KLAVIS_SNOWFLAKE_USER", "XX"), # TO BE FILLED
+    snowflake_private_key = os.environ.get("KLAVIS_SNOWFLAKE_PRIVATE_KEY", None), # TO BE FILLED
+    # snowflake_private_key_path = snowflake_private_key_path, # TO BE FILLED
+    snowflake_database = os.environ.get("KLAVIS_SNOWFLAKE_DATABASE", "SNOWFLAKE"), # we prefill `SNOWFLAKE` here to make compatibility
+    snowflake_schema = os.environ.get("KLAVIS_SNOWFLAKE_SCHEMA", "PUBLIC"), # we prefill `PUBLIC` here to make compatibility
     snowflake_op_allowed_databases = "null", # KEEP_IT_ASIS_CUZ_IT_WILL_BE_RESET_IN_TASK_SPECIFIC_DIR
 
     ### Local Ones
