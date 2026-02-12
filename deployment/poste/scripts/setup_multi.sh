@@ -8,9 +8,10 @@
 #   Submission: BASE_SUBMISSION + index  (default 1587  + index)
 #
 # Usage:
-#   bash setup_multi.sh start <index>          # start instance N
+#   bash setup_multi.sh start <index>          # start instance N (full setup)
 #   bash setup_multi.sh stop <index>           # stop instance N
-#   bash setup_multi.sh start_all <count>      # start instances 0..(count-1)
+#   bash setup_multi.sh build_golden           # build golden image with all users
+#   bash setup_multi.sh start_all <count>      # clone golden image to N instances
 #   bash setup_multi.sh stop_all <count>       # stop instances 0..(count-1)
 #   bash setup_multi.sh status                 # show all running poste instances
 #   bash setup_multi.sh config <index>         # configure dovecot for instance N
@@ -39,6 +40,8 @@ MAX_PARALLEL=${MAX_PARALLEL:-10}
 CONFIGURE_DOVECOT=${CONFIGURE_DOVECOT:-true}
 DOMAIN="mcp.com"
 DOCKER="docker"
+GOLDEN_IMAGE="poste-golden:latest"
+BASE_IMAGE="analogic/poste.io:2.5.5"
 
 # ── Derived values for a given index ────────────────────────────────
 get_ports() {
@@ -58,8 +61,10 @@ get_data_dir() {
 }
 
 # ── Start a single instance ─────────────────────────────────────────
+# $1 = index, $2 = image (optional, default BASE_IMAGE)
 start_instance() {
   local idx=$1
+  local image=${2:-$BASE_IMAGE}
   local container_name=$(get_container_name "$idx")
   local data_dir=$(get_data_dir "$idx")
   get_ports "$idx"
@@ -77,7 +82,7 @@ start_instance() {
   mkdir -p "$data_dir"
   chmod -R 777 "$data_dir"
 
-  echo "🚀 Starting instance $idx: web=$WEB_PORT smtp=$SMTP_PORT imap=$IMAP_PORT submission=$SUBMISSION_PORT"
+  echo "🚀 Starting instance $idx: web=$WEB_PORT smtp=$SMTP_PORT imap=$IMAP_PORT submission=$SUBMISSION_PORT image=$image"
 
   $DOCKER run -d \
     --name "$container_name" \
@@ -96,7 +101,7 @@ start_instance() {
     -e "HTTPS=OFF" \
     -v "${data_dir}:/data:Z" \
     --hostname "$DOMAIN" \
-    analogic/poste.io:2.5.5
+    "$image"
 
   if [ $? -eq 0 ]; then
     echo "✅ Instance $idx started"
@@ -212,8 +217,10 @@ wait_for_ready() {
   while [ $attempt -lt $max_attempts ]; do
     local http_code
     http_code=$($DOCKER exec "$container_name" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/ 2>/dev/null || echo "000")
+    # Trim whitespace and take only last 3 chars (curl may prefix extra output)
+    http_code=$(echo "$http_code" | tr -d '[:space:]' | tail -c 3)
     # Match any valid HTTP response code (1xx-5xx); reject "000" or other non-HTTP outputs
-    if [[ "$http_code" =~ ^[1-5][0-9][0-9]$ ]]; then
+    if [[ ${#http_code} -eq 3 ]] && [[ "$http_code" =~ ^[1-5][0-9][0-9]$ ]]; then
       echo "  ✓ [${idx}] Web server up (HTTP $http_code, ~$((attempt * 2))s)"
       break
     fi
@@ -264,38 +271,245 @@ wait_for_ready() {
 full_setup_instance() {
   local idx=$1
   start_instance "$idx"
-  wait_for_ready "$idx"
+  if ! wait_for_ready "$idx"; then
+    echo "❌ Instance $idx: wait_for_ready failed, skipping configure + user creation"
+    return 1
+  fi
   if [ "$CONFIGURE_DOVECOT" = "true" ]; then
     configure_instance "$idx"
   fi
   sleep 2
-  create_users_instance "$idx"
+  if ! create_users_instance "$idx"; then
+    echo "❌ Instance $idx: user creation failed"
+    return 1
+  fi
   echo "🎉 Instance $idx fully ready!"
+}
+
+# ── Build golden image: setup once, commit, reuse everywhere ────────
+# IMPORTANT: The seed container runs WITHOUT a volume mount so that all
+# data lives in the container's writable layer. docker commit only captures
+# the container layer, not bind-mounted volumes.
+build_golden() {
+  echo "🏗️  Building golden image ($GOLDEN_IMAGE)..."
+  echo "   This sets up 1 instance with all users, then commits it as a reusable image."
+  echo ""
+
+  local seed_name="poste-golden-seed"
+  local seed_web=$((BASE_WEB + 9999))  # Use a high port to avoid conflicts
+
+  # Clean up any previous seed
+  $DOCKER rm -f "$seed_name" 2>/dev/null || true
+
+  echo "🚀 Starting seed container (no volume mount — data stays in container layer)..."
+  $DOCKER run -d \
+    --name "$seed_name" \
+    --cap-add NET_ADMIN \
+    --cap-add NET_RAW \
+    --cap-add NET_BIND_SERVICE \
+    --cap-add SYS_PTRACE \
+    -p "${seed_web}:80" \
+    -e "DISABLE_CLAMAV=TRUE" \
+    -e "DISABLE_RSPAMD=TRUE" \
+    -e "DISABLE_P0F=TRUE" \
+    -e "HTTPS_FORCE=0" \
+    -e "HTTPS=OFF" \
+    --hostname "$DOMAIN" \
+    "$BASE_IMAGE"
+
+  # Wait for web server + DB to be ready
+  echo "⏳ Waiting for seed container to be ready..."
+  local max_attempts=90
+  local attempt=0
+  while [ $attempt -lt $max_attempts ]; do
+    local http_code
+    http_code=$($DOCKER exec "$seed_name" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/ 2>/dev/null || echo "000")
+    http_code=$(echo "$http_code" | tr -d '[:space:]' | tail -c 3)
+    if [[ ${#http_code} -eq 3 ]] && [[ "$http_code" =~ ^[1-5][0-9][0-9]$ ]]; then
+      echo "  ✓ Web server up (HTTP $http_code, ~$((attempt * 2))s)"
+      break
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
+  if [ $attempt -ge $max_attempts ]; then
+    echo "❌ Seed container web server not responding"
+    $DOCKER rm -f "$seed_name" 2>/dev/null || true
+    return 1
+  fi
+
+  # Initialize DB if needed
+  local output
+  output=$($DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console domain:list 2>&1)
+  if echo "$output" | grep -q "no such table"; then
+    echo "  → Initializing database schema..."
+    $DOCKER exec "$seed_name" rm -f /data/users.db 2>/dev/null || true
+    $DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console doctrine:schema:create --no-interaction 2>/dev/null || true
+    sleep 2
+  fi
+
+  # Configure dovecot/haraka
+  echo "🔧 Configuring services..."
+  $DOCKER exec "$seed_name" sed -i 's/ssl = required/ssl = yes/' /etc/dovecot/conf.d/10-ssl.conf 2>/dev/null || true
+  $DOCKER exec "$seed_name" sed -i 's/auth_allow_cleartext = no/auth_allow_cleartext = yes/' /etc/dovecot/conf.d/10-auth.conf 2>/dev/null || true
+  $DOCKER exec "$seed_name" sed -i '/disable_plaintext_auth/d' /etc/dovecot/conf.d/10-auth.conf 2>/dev/null || true
+  $DOCKER exec "$seed_name" sed -i 's/tls_required = true/tls_required = false/' /opt/haraka-smtp/config/auth.ini 2>/dev/null || true
+  $DOCKER exec "$seed_name" sed -i 's/tls_required = true/tls_required = false/' /opt/haraka-submission/config/auth.ini 2>/dev/null || true
+  $DOCKER exec "$seed_name" sed -i 's/^auth\/poste/#auth\/poste/' /opt/haraka-submission/config/plugins 2>/dev/null || true
+  $DOCKER exec "$seed_name" sh -c 'echo "127.0.0.1/8" > /opt/haraka-submission/config/relay_acl_allow' 2>/dev/null || true
+  $DOCKER exec "$seed_name" sh -c 'echo "192.168.0.0/16" >> /opt/haraka-submission/config/relay_acl_allow' 2>/dev/null || true
+  $DOCKER exec "$seed_name" sh -c 'echo "172.16.0.0/12" >> /opt/haraka-submission/config/relay_acl_allow' 2>/dev/null || true
+  $DOCKER exec "$seed_name" sh -c 'echo "10.0.0.0/8" >> /opt/haraka-submission/config/relay_acl_allow' 2>/dev/null || true
+  $DOCKER exec "$seed_name" doveadm reload 2>/dev/null || true
+
+  # Create domain + users
+  echo "👥 Creating domain and users..."
+  if ! $DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console domain:list 2>/dev/null | grep -q "$DOMAIN"; then
+    $DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console domain:create "$DOMAIN" 2>/dev/null || true
+  fi
+  $DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console email:create "mcpposte_admin@$DOMAIN" "mcpposte" "System Administrator" 2>/dev/null || true
+  $DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console email:admin "mcpposte_admin@$DOMAIN" 2>/dev/null || true
+
+  local users_json="$PROJECT_ROOT/configs/users_data.json"
+  if [ -f "$users_json" ]; then
+    local counter=0
+    while IFS='|' read -r email password full_name; do
+      counter=$((counter + 1))
+      [ $counter -gt $NUM_USERS ] && break
+      $DOCKER exec --user=8 "$seed_name" php /opt/admin/bin/console email:create "$email" "$password" "$full_name" 2>/dev/null &
+      [ $((counter % 50)) -eq 0 ] && wait
+    done < <(jq -r ".users[] | \"\(.email)|\(.password)|\(.full_name)\"" "$users_json")
+    wait
+    echo "✅ Created $counter users"
+  fi
+
+  echo ""
+  echo "📦 Committing container to image: $GOLDEN_IMAGE"
+
+  # IMPORTANT: The base image declares VOLUME /data, so docker commit skips /data.
+  # We copy /data to /data_golden (not a volume) so it gets captured in the image.
+  echo "  → Copying /data to /data_golden (workaround for VOLUME exclusion)..."
+  $DOCKER exec "$seed_name" cp -a /data /data_golden
+
+  # Stop the container cleanly before committing (ensures consistent state)
+  $DOCKER stop "$seed_name"
+
+  # Commit the container (with all data baked in) as a new image
+  $DOCKER commit \
+    --change 'CMD ["/init"]' \
+    "$seed_name" \
+    "$GOLDEN_IMAGE"
+
+  if [ $? -eq 0 ]; then
+    local image_size
+    image_size=$($DOCKER image inspect "$GOLDEN_IMAGE" --format '{{.Size}}' 2>/dev/null | awk '{printf "%.0f MB", $1/1024/1024}')
+    echo "✅ Golden image built: $GOLDEN_IMAGE ($image_size)"
+  else
+    echo "❌ Failed to commit golden image"
+    return 1
+  fi
+
+  # Clean up the seed container
+  $DOCKER rm -f "$seed_name" 2>/dev/null || true
+
+  echo ""
+  echo "🚀 Golden image ready! Now run:"
+  echo "   $0 start_all <count>    # Clones golden image to N instances (fast, no user creation)"
+}
+
+# ── Start a single instance from golden image (fast, no setup) ──────
+# Copies baked-in /data to a host dir first so data persists across restarts.
+start_instance_from_golden() {
+  local idx=$1
+  local container_name=$(get_container_name "$idx")
+  local data_dir=$(get_data_dir "$idx")
+  get_ports "$idx"
+
+  # Seed host data dir from the golden image (only if empty/missing)
+  if [ ! -f "$data_dir/users.db" ]; then
+    echo "📂 [${idx}] Seeding data dir from golden image..."
+    mkdir -p "$data_dir"
+    # Use docker run with bind-mount to reliably copy all files from /data_golden.
+    # (docker create + docker cp silently skips files in committed layers)
+    $DOCKER run --rm \
+      -v "$data_dir":/export \
+      --entrypoint sh \
+      "$GOLDEN_IMAGE" \
+      -c 'cp -a /data_golden/* /export/ 2>/dev/null; cp -a /data_golden/.??* /export/ 2>/dev/null; true'
+
+    # Fix symlinks that point back to /data/... (they cause loops when host-mounted)
+    for link in "$data_dir"/*; do
+      if [ -L "$link" ]; then
+        local target=$(readlink "$link")
+        if [[ "$target" == /data/* ]]; then
+          echo "  → [${idx}] Fixing symlink loop: $(basename "$link") -> $target"
+          rm -f "$link"
+          mkdir -p "$link"
+        fi
+      fi
+    done
+
+    chmod -R 777 "$data_dir"
+    echo "  ✓ [${idx}] Seeded $(ls "$data_dir" | wc -l) items, users.db=$(du -h "$data_dir/users.db" 2>/dev/null | cut -f1)"
+  fi
+
+  # Start with host volume mount (data persists across crashes/restarts)
+  start_instance "$idx" "$GOLDEN_IMAGE"
+
+  echo "🎉 Instance $idx ready (cloned from golden image, data persistent)"
 }
 
 # ── Start all instances in parallel batches ─────────────────────────
 start_all() {
   local count=${1:-5}
-  echo "🚀 Starting $count Poste.io instances (parallel=$MAX_PARALLEL)..."
-  echo ""
 
-  local started=0
-  local batch=0
+  # Check if golden image exists — if so, use fast clone path
+  if $DOCKER image inspect "$GOLDEN_IMAGE" &>/dev/null; then
+    echo "🚀 Starting $count instances from golden image (parallel=$MAX_PARALLEL)..."
+    echo "   ⚡ Using pre-built image — no user creation needed!"
+    echo ""
 
-  for ((i=0; i<count; i++)); do
-    full_setup_instance "$i" &
-    started=$((started + 1))
+    local started=0
+    local batch=0
 
-    if [ $((started % MAX_PARALLEL)) -eq 0 ]; then
-      batch=$((batch + 1))
-      echo "⏳ Waiting for batch $batch to complete..."
-      wait
-      echo "✅ Batch $batch done ($started/$count instances started)"
-    fi
-  done
+    for ((i=0; i<count; i++)); do
+      start_instance_from_golden "$i" &
+      started=$((started + 1))
 
-  # Wait for remaining
-  wait
+      if [ $((started % MAX_PARALLEL)) -eq 0 ]; then
+        batch=$((batch + 1))
+        echo "⏳ Waiting for batch $batch to complete..."
+        wait
+        echo "✅ Batch $batch done ($started/$count instances started)"
+      fi
+    done
+
+    wait
+  else
+    echo "⚠️  Golden image not found ($GOLDEN_IMAGE)."
+    echo "   Falling back to full setup per instance (slow)."
+    echo "   💡 Tip: Run '$0 build_golden' first to create the golden image."
+    echo ""
+    echo "🚀 Starting $count Poste.io instances (parallel=$MAX_PARALLEL)..."
+    echo ""
+
+    local started=0
+    local batch=0
+
+    for ((i=0; i<count; i++)); do
+      full_setup_instance "$i" &
+      started=$((started + 1))
+
+      if [ $((started % MAX_PARALLEL)) -eq 0 ]; then
+        batch=$((batch + 1))
+        echo "⏳ Waiting for batch $batch to complete..."
+        wait
+        echo "✅ Batch $batch done ($started/$count instances started)"
+      fi
+    done
+
+    wait
+  fi
 
   echo ""
   echo "🎉 All $count instances started!"
@@ -417,6 +631,9 @@ case "$COMMAND" in
     fi
     stop_instance "$2"
     ;;
+  build_golden)
+    build_golden
+    ;;
   start_all)
     start_all "${2:-5}"
     ;;
@@ -440,17 +657,19 @@ case "$COMMAND" in
     echo "Usage: $0 <command> [args]"
     echo ""
     echo "Commands:"
+    echo "  build_golden         Build golden image (setup once, reuse everywhere)"
     echo "  start <index>        Start a single instance by index (0-based)"
     echo "  stop <index>         Stop a single instance by index"
-    echo "  start_all <count>    Start <count> instances (default: 5)"
+    echo "  start_all <count>    Start <count> instances from golden image (fast)"
     echo "  stop_all [count]     Stop all running instances"
     echo "  status               Show all running instances and their ports"
     echo "  config <index>       Reconfigure dovecot for an instance"
     echo "  generate_configs     Generate email_config JSON for all running instances"
     echo ""
     echo "Examples:"
-    echo "  $0 start_all 5       # Start 5 instances (warm pool)"
-    echo "  $0 start_all 200     # Start all 200 instances"
+    echo "  $0 build_golden      # Build golden image (~10min, only once)"
+    echo "  $0 start_all 200     # Clone 200 instances from golden image (fast!)"
+    echo "  $0 start_all 5       # Start 5 instances"
     echo "  $0 start 42          # Start just instance 42"
     echo "  $0 stop 42           # Stop instance 42"
     echo "  $0 stop_all          # Stop everything"
