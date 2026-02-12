@@ -54,6 +54,7 @@ start_container() {
   echo "🚀 Starting Poste.io..."
   $podman_or_docker run -d \
     --name $CONTAINER_NAME \
+    --restart unless-stopped \
     --cap-add NET_ADMIN \
     --cap-add NET_RAW \
     --cap-add NET_BIND_SERVICE \
@@ -107,20 +108,11 @@ configure_dovecot() {
   echo "🔧 Configuring Haraka SMTP..."
   $podman_or_docker exec $CONTAINER_NAME sed -i 's/tls_required = true/tls_required = false/' /opt/haraka-smtp/config/auth.ini
 
-  # Configure Haraka Submission (port 587) to allow plaintext auth
+  # Configure Haraka Submission (port 587) — disable TLS requirement but keep auth enabled
   echo "🔧 Configuring Haraka Submission (port 587)..."
   $podman_or_docker exec $CONTAINER_NAME sed -i 's/tls_required = true/tls_required = false/' /opt/haraka-submission/config/auth.ini
-
-  # Temporarily disable auth plugin for submission for testing
-  echo "🔧 Temporarily disabling auth plugin for submission..."
-  $podman_or_docker exec $CONTAINER_NAME sed -i 's/^auth\/poste/#auth\/poste/' /opt/haraka-submission/config/plugins
-
-  # Configure relay ACL to allow local connections
-  echo "🔧 Configuring relay ACL..."
-  $podman_or_docker exec $CONTAINER_NAME sh -c 'echo "127.0.0.1/8" > /opt/haraka-submission/config/relay_acl_allow'
-  $podman_or_docker exec $CONTAINER_NAME sh -c 'echo "192.168.0.0/16" >> /opt/haraka-submission/config/relay_acl_allow'
-  $podman_or_docker exec $CONTAINER_NAME sh -c 'echo "172.16.0.0/12" >> /opt/haraka-submission/config/relay_acl_allow'
-  $podman_or_docker exec $CONTAINER_NAME sh -c 'echo "10.0.0.0/8" >> /opt/haraka-submission/config/relay_acl_allow'
+  # NOTE: We do NOT disable the auth/poste plugin — we want email+password required for SMTP submission
+  # NOTE: We do NOT add relay_acl_allow — unauthenticated relay must be blocked
 
   # Verify Dovecot config
   echo "🔍 Verifying Dovecot configuration..."
