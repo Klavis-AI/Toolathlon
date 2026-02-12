@@ -1,0 +1,476 @@
+#!/bin/bash
+#
+# setup_multi.sh — Start/stop a single Poste.io instance by index number.
+# Each instance gets unique ports derived from its index:
+#   Web:        BASE_WEB        + index  (default 10005 + index)
+#   SMTP:       BASE_SMTP       + index  (default 2525  + index)
+#   IMAP:       BASE_IMAP       + index  (default 1143  + index)
+#   Submission: BASE_SUBMISSION + index  (default 1587  + index)
+#
+# Usage:
+#   bash setup_multi.sh start <index>          # start instance N
+#   bash setup_multi.sh stop <index>           # stop instance N
+#   bash setup_multi.sh start_all <count>      # start instances 0..(count-1)
+#   bash setup_multi.sh stop_all <count>       # stop instances 0..(count-1)
+#   bash setup_multi.sh status                 # show all running poste instances
+#   bash setup_multi.sh config <index>         # configure dovecot for instance N
+#
+# Environment variables (override defaults):
+#   PODMAN_OR_DOCKER  — container runtime (default: auto-detect from global_configs.py)
+#   BASE_WEB          — base web port         (default: 10005)
+#   BASE_SMTP         — base SMTP port        (default: 2525)
+#   BASE_IMAP         — base IMAP port        (default: 1143)
+#   BASE_SUBMISSION   — base submission port   (default: 1587)
+#   NUM_USERS         — users to create per instance (default: 503)
+#   MAX_PARALLEL      — max parallel instance starts (default: 10)
+#   CONFIGURE_DOVECOT — whether to configure dovecot (default: true)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+# ── Container runtime ────────────────────────────────────────────────
+if [ -z "${PODMAN_OR_DOCKER:-}" ]; then
+  PODMAN_OR_DOCKER=$(cd "$PROJECT_ROOT" && uv run python -c "
+import sys; sys.path.append('configs')
+from global_configs import global_configs
+print(global_configs.podman_or_docker)
+")
+fi
+
+# ── Base ports (instance 0 gets these exact ports) ───────────────────
+BASE_WEB=${BASE_WEB:-10005}
+BASE_SMTP=${BASE_SMTP:-2525}
+BASE_IMAP=${BASE_IMAP:-1143}
+BASE_SUBMISSION=${BASE_SUBMISSION:-1587}
+NUM_USERS=${NUM_USERS:-503}
+MAX_PARALLEL=${MAX_PARALLEL:-10}
+CONFIGURE_DOVECOT=${CONFIGURE_DOVECOT:-true}
+DOMAIN="mcp.com"
+
+# ── Derived values for a given index ────────────────────────────────
+get_ports() {
+  local idx=$1
+  WEB_PORT=$((BASE_WEB + idx))
+  SMTP_PORT=$((BASE_SMTP + idx))
+  IMAP_PORT=$((BASE_IMAP + idx))
+  SUBMISSION_PORT=$((BASE_SUBMISSION + idx))
+}
+
+get_container_name() {
+  echo "poste-${1}"
+}
+
+get_data_dir() {
+  echo "$PROJECT_ROOT/deployment/poste/data/instance-${1}"
+}
+
+# ── Start a single instance ─────────────────────────────────────────
+start_instance() {
+  local idx=$1
+  local container_name=$(get_container_name "$idx")
+  local data_dir=$(get_data_dir "$idx")
+  get_ports "$idx"
+
+  # Skip if already running
+  if $PODMAN_OR_DOCKER ps --format '{{.Names}}' 2>/dev/null | grep -qx "$container_name"; then
+    echo "⏭️  Instance $idx ($container_name) already running, skipping"
+    return 0
+  fi
+
+  # Clean up stopped container with same name
+  $PODMAN_OR_DOCKER rm -f "$container_name" 2>/dev/null || true
+
+  # Prepare data dir
+  mkdir -p "$data_dir"
+  chmod -R 777 "$data_dir"
+
+  echo "🚀 Starting instance $idx: web=$WEB_PORT smtp=$SMTP_PORT imap=$IMAP_PORT submission=$SUBMISSION_PORT"
+
+  $PODMAN_OR_DOCKER run -d \
+    --name "$container_name" \
+    --restart unless-stopped \
+    --cap-add NET_ADMIN \
+    --cap-add NET_RAW \
+    --cap-add NET_BIND_SERVICE \
+    --cap-add SYS_PTRACE \
+    -p "${WEB_PORT}:80" \
+    -p "${SMTP_PORT}:25" \
+    -p "${IMAP_PORT}:143" \
+    -p "${SUBMISSION_PORT}:587" \
+    -e "DISABLE_CLAMAV=TRUE" \
+    -e "DISABLE_RSPAMD=TRUE" \
+    -e "DISABLE_P0F=TRUE" \
+    -e "HTTPS_FORCE=0" \
+    -e "HTTPS=OFF" \
+    -v "${data_dir}:/data:Z" \
+    --hostname "$DOMAIN" \
+    analogic/poste.io:2.5.5
+
+  if [ $? -eq 0 ]; then
+    echo "✅ Instance $idx started"
+  else
+    echo "❌ Instance $idx failed to start"
+    return 1
+  fi
+}
+
+# ── Stop a single instance ──────────────────────────────────────────
+stop_instance() {
+  local idx=$1
+  local container_name=$(get_container_name "$idx")
+  local data_dir=$(get_data_dir "$idx")
+
+  echo "🛑 Stopping instance $idx ($container_name)..."
+  $PODMAN_OR_DOCKER stop "$container_name" 2>/dev/null || true
+  $PODMAN_OR_DOCKER rm -f "$container_name" 2>/dev/null || true
+
+  # Clean data dir
+  if [ -d "$data_dir" ]; then
+    rm -rf "$data_dir" 2>/dev/null || sudo rm -rf "$data_dir" 2>/dev/null || true
+  fi
+
+  echo "✅ Instance $idx stopped"
+}
+
+# ── Configure dovecot for a single instance ─────────────────────────
+configure_instance() {
+  local idx=$1
+  local container_name=$(get_container_name "$idx")
+
+  # Check container is running
+  if ! $PODMAN_OR_DOCKER ps --format '{{.Names}}' 2>/dev/null | grep -qx "$container_name"; then
+    echo "⚠️  Instance $idx not running, skipping config"
+    return 1
+  fi
+
+  # Dovecot SSL
+  $PODMAN_OR_DOCKER exec "$container_name" sed -i 's/ssl = required/ssl = yes/' /etc/dovecot/conf.d/10-ssl.conf 2>/dev/null || true
+  # Dovecot cleartext auth
+  $PODMAN_OR_DOCKER exec "$container_name" sed -i 's/auth_allow_cleartext = no/auth_allow_cleartext = yes/' /etc/dovecot/conf.d/10-auth.conf 2>/dev/null || true
+  $PODMAN_OR_DOCKER exec "$container_name" sed -i '/disable_plaintext_auth/d' /etc/dovecot/conf.d/10-auth.conf 2>/dev/null || true
+  # Haraka SMTP
+  $PODMAN_OR_DOCKER exec "$container_name" sed -i 's/tls_required = true/tls_required = false/' /opt/haraka-smtp/config/auth.ini 2>/dev/null || true
+  # Haraka Submission — disable TLS requirement but keep auth enabled
+  $PODMAN_OR_DOCKER exec "$container_name" sed -i 's/tls_required = true/tls_required = false/' /opt/haraka-submission/config/auth.ini 2>/dev/null || true
+  # NOTE: We do NOT disable the auth/poste plugin — we want email+password required for SMTP submission
+  # NOTE: We do NOT add relay_acl_allow — unauthenticated relay must be blocked
+
+  # Reload services
+  $PODMAN_OR_DOCKER exec "$container_name" doveadm reload 2>/dev/null || true
+  $PODMAN_OR_DOCKER exec "$container_name" sh -c 'kill $(pgrep -f "haraka.*smtp")' 2>/dev/null || true
+  $PODMAN_OR_DOCKER exec "$container_name" sh -c 'kill $(pgrep -f "haraka.*submission")' 2>/dev/null || true
+
+  echo "✅ Instance $idx configured"
+}
+
+# ── Create users for a single instance ──────────────────────────────
+create_users_instance() {
+  local idx=$1
+  local container_name=$(get_container_name "$idx")
+
+  if ! $PODMAN_OR_DOCKER ps --format '{{.Names}}' 2>/dev/null | grep -qx "$container_name"; then
+    echo "⚠️  Instance $idx not running, skipping user creation"
+    return 1
+  fi
+
+  # Ensure domain exists
+  if ! $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:list 2>/dev/null | grep -q "$DOMAIN"; then
+    $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console domain:create "$DOMAIN" 2>/dev/null || true
+  fi
+
+  # Create admin
+  $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console email:create "mcpposte_admin@$DOMAIN" "mcpposte" "System Administrator" 2>/dev/null || true
+  $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console email:admin "mcpposte_admin@$DOMAIN" 2>/dev/null || true
+
+  # Create users from JSON using a bulk PHP script inside the container for speed
+  local users_json="$PROJECT_ROOT/configs/users_data.json"
+  if [ ! -f "$users_json" ]; then
+    echo "⚠️  users_data.json not found, skipping user creation for instance $idx"
+    return 1
+  fi
+
+  # Generate a PHP script to create all users in one exec call
+  local php_script
+  php_script=$(cd "$PROJECT_ROOT" && uv run python -c "
+import json, sys
+with open('configs/users_data.json') as f:
+    data = json.load(f)
+users = data['users'][:${NUM_USERS}]
+lines = ['<?php']
+lines.append('require \"/opt/admin/vendor/autoload.php\";')
+lines.append('\$kernel = new \\\\App\\\\Kernel(\"prod\", false);')
+lines.append('\$kernel->boot();')
+lines.append('\$app = \$kernel->getContainer()->get(\"console.application\");')
+for u in users:
+    email = u['email']
+    password = u['password'].replace('\"', '\\\\\"')
+    name = u['full_name'].replace('\"', '\\\\\"')
+    lines.append(f'shell_exec(\"php /opt/admin/bin/console email:create \\\\\"{email}\\\\\" \\\\\"{password}\\\\\" \\\\\"{name}\\\\\" 2>/dev/null\");')
+print('\\n'.join(lines))
+" 2>/dev/null)
+
+  # If python generation fails, fall back to sequential creation
+  if [ -z "$php_script" ]; then
+    echo "⚠️  Falling back to sequential user creation for instance $idx"
+    local counter=0
+    cd "$PROJECT_ROOT"
+    while IFS='|' read -r id first_name last_name full_name email password; do
+      counter=$((counter + 1))
+      [ $counter -gt $NUM_USERS ] && break
+      $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console email:create "$email" "$password" "$full_name" 2>/dev/null || true
+    done < <(jq -r '.users[] | "\(.id)|\(.first_name)|\(.last_name)|\(.full_name)|\(.email)|\(.password)"' configs/users_data.json)
+  else
+    # Write PHP script into container and execute
+    echo "$php_script" | $PODMAN_OR_DOCKER exec -i --user=8 "$container_name" sh -c 'cat > /tmp/create_users.php'
+    $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /tmp/create_users.php 2>/dev/null || true
+    
+    # If PHP approach didn't work, fall back to shell-based batch
+    local user_count=$($PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console email:list 2>/dev/null | wc -l)
+    if [ "$user_count" -lt 10 ]; then
+      echo "⚠️  PHP bulk create may have failed for instance $idx, using shell fallback"
+      local counter=0
+      cd "$PROJECT_ROOT"
+      while IFS='|' read -r id first_name last_name full_name email password; do
+        counter=$((counter + 1))
+        [ $counter -gt $NUM_USERS ] && break
+        $PODMAN_OR_DOCKER exec --user=8 "$container_name" php /opt/admin/bin/console email:create "$email" "$password" "$full_name" 2>/dev/null &
+        [ $((counter % 50)) -eq 0 ] && wait
+      done < <(jq -r '.users[] | "\(.id)|\(.first_name)|\(.last_name)|\(.full_name)|\(.email)|\(.password)"' configs/users_data.json)
+      wait
+    fi
+  fi
+
+  echo "✅ Users created for instance $idx"
+}
+
+# ── Full setup for a single instance (start + configure + users) ────
+full_setup_instance() {
+  local idx=$1
+  start_instance "$idx"
+  echo "⏳ Waiting for instance $idx services to initialize..."
+  sleep 12
+  if [ "$CONFIGURE_DOVECOT" = "true" ]; then
+    configure_instance "$idx"
+  fi
+  sleep 2
+  create_users_instance "$idx"
+  echo "🎉 Instance $idx fully ready!"
+}
+
+# ── Start all instances in parallel batches ─────────────────────────
+start_all() {
+  local count=${1:-5}
+  echo "🚀 Starting $count Poste.io instances (parallel=$MAX_PARALLEL)..."
+  echo ""
+
+  local started=0
+  local batch=0
+
+  for ((i=0; i<count; i++)); do
+    full_setup_instance "$i" &
+    started=$((started + 1))
+
+    if [ $((started % MAX_PARALLEL)) -eq 0 ]; then
+      batch=$((batch + 1))
+      echo "⏳ Waiting for batch $batch to complete..."
+      wait
+      echo "✅ Batch $batch done ($started/$count instances started)"
+    fi
+  done
+
+  # Wait for remaining
+  wait
+
+  echo ""
+  echo "🎉 All $count instances started!"
+  echo ""
+  show_status
+}
+
+# ── Stop all instances ──────────────────────────────────────────────
+stop_all() {
+  local count=${1:-200}
+  echo "🛑 Stopping up to $count instances..."
+
+  # Find all running poste-* containers
+  local running
+  running=$($PODMAN_OR_DOCKER ps --format '{{.Names}}' 2>/dev/null | grep '^poste-[0-9]' || true)
+
+  if [ -z "$running" ]; then
+    echo "No running poste instances found."
+    return 0
+  fi
+
+  echo "$running" | while read -r name; do
+    local idx=${name#poste-}
+    stop_instance "$idx" &
+  done
+  wait
+
+  echo "✅ All instances stopped"
+}
+
+# ── Show status ─────────────────────────────────────────────────────
+show_status() {
+  echo "📊 Running Poste.io instances:"
+  echo "─────────────────────────────────────────────────────────────────────"
+  printf "%-12s %-8s %-8s %-8s %-12s %-10s\n" "CONTAINER" "WEB" "SMTP" "IMAP" "SUBMISSION" "STATUS"
+  echo "─────────────────────────────────────────────────────────────────────"
+
+  local running
+  running=$($PODMAN_OR_DOCKER ps --format '{{.Names}}' 2>/dev/null | grep '^poste-[0-9]' | sort -t'-' -k2 -n || true)
+
+  if [ -z "$running" ]; then
+    echo "(none)"
+  else
+    local total=0
+    echo "$running" | while read -r name; do
+      local idx=${name#poste-}
+      get_ports "$idx"
+      local status=$($PODMAN_OR_DOCKER inspect --format '{{.State.Status}}' "$name" 2>/dev/null || echo "unknown")
+      printf "%-12s %-8s %-8s %-8s %-12s %-10s\n" "$name" "$WEB_PORT" "$SMTP_PORT" "$IMAP_PORT" "$SUBMISSION_PORT" "$status"
+    done
+    echo "─────────────────────────────────────────────────────────────────────"
+    echo "Total: $(echo "$running" | wc -l) instances"
+  fi
+}
+
+# ── Generate email configs for all running instances ────────────────
+generate_configs() {
+  local output_dir="$PROJECT_ROOT/deployment/poste/configs/instances"
+  mkdir -p "$output_dir"
+
+  local running
+  running=$($PODMAN_OR_DOCKER ps --format '{{.Names}}' 2>/dev/null | grep '^poste-[0-9]' | sort -t'-' -k2 -n || true)
+
+  if [ -z "$running" ]; then
+    echo "No running instances. Start some first."
+    return 1
+  fi
+
+  # Get the host IP (for remote access; localhost for local)
+  local host_ip="${HOST_IP:-localhost}"
+
+  echo "$running" | while read -r name; do
+    local idx=${name#poste-}
+    get_ports "$idx"
+
+    cat > "$output_dir/email_config_instance_${idx}.json" << EOF
+{
+    "instance_id": ${idx},
+    "email": "micheller@mcp.com",
+    "password": "michelle_60R",
+    "name": "Ronald Kelly",
+    "imap_server": "${host_ip}",
+    "imap_port": ${IMAP_PORT},
+    "smtp_server": "${host_ip}",
+    "smtp_port": ${SUBMISSION_PORT},
+    "use_ssl": false,
+    "use_starttls": false
+}
+EOF
+  done
+
+  # Also generate a master index
+  cd "$PROJECT_ROOT"
+  uv run python -c "
+import json, os, glob
+
+configs = []
+for f in sorted(glob.glob('$output_dir/email_config_instance_*.json'), key=lambda x: int(x.split('_')[-1].split('.')[0])):
+    with open(f) as fh:
+        configs.append(json.load(fh))
+
+index = {
+    'total_instances': len(configs),
+    'host': '${host_ip}',
+    'instances': configs
+}
+
+with open('$output_dir/instances_index.json', 'w') as fh:
+    json.dump(index, fh, indent=2)
+
+print(f'Generated {len(configs)} instance configs in $output_dir/')
+print(f'Master index: $output_dir/instances_index.json')
+" 2>/dev/null || echo "⚠️  Could not generate master index (missing uv/python)"
+
+  echo "✅ Config files generated in $output_dir/"
+}
+
+# ── Main ────────────────────────────────────────────────────────────
+COMMAND=${1:-help}
+
+case "$COMMAND" in
+  start)
+    if [ -z "${2:-}" ]; then
+      echo "Usage: $0 start <index>"
+      exit 1
+    fi
+    full_setup_instance "$2"
+    ;;
+  stop)
+    if [ -z "${2:-}" ]; then
+      echo "Usage: $0 stop <index>"
+      exit 1
+    fi
+    stop_instance "$2"
+    ;;
+  start_all)
+    start_all "${2:-5}"
+    ;;
+  stop_all)
+    stop_all "${2:-200}"
+    ;;
+  status)
+    show_status
+    ;;
+  config)
+    if [ -z "${2:-}" ]; then
+      echo "Usage: $0 config <index>"
+      exit 1
+    fi
+    configure_instance "$2"
+    ;;
+  generate_configs)
+    generate_configs
+    ;;
+  help|*)
+    echo "Usage: $0 <command> [args]"
+    echo ""
+    echo "Commands:"
+    echo "  start <index>        Start a single instance by index (0-based)"
+    echo "  stop <index>         Stop a single instance by index"
+    echo "  start_all <count>    Start <count> instances (default: 5)"
+    echo "  stop_all [count]     Stop all running instances"
+    echo "  status               Show all running instances and their ports"
+    echo "  config <index>       Reconfigure dovecot for an instance"
+    echo "  generate_configs     Generate email_config JSON for all running instances"
+    echo ""
+    echo "Examples:"
+    echo "  $0 start_all 5       # Start 5 instances (warm pool)"
+    echo "  $0 start_all 200     # Start all 200 instances"
+    echo "  $0 start 42          # Start just instance 42"
+    echo "  $0 stop 42           # Stop instance 42"
+    echo "  $0 stop_all          # Stop everything"
+    echo "  $0 status            # See what's running"
+    echo "  $0 generate_configs  # Generate email configs for all running instances"
+    echo ""
+    echo "Environment variables:"
+    echo "  BASE_WEB=10005       Base web port (instance N = BASE + N)"
+    echo "  BASE_SMTP=2525       Base SMTP port"
+    echo "  BASE_IMAP=1143       Base IMAP port"
+    echo "  BASE_SUBMISSION=1587 Base submission port"
+    echo "  NUM_USERS=503        Users to create per instance"
+    echo "  MAX_PARALLEL=10      Max parallel instance starts"
+    echo "  HOST_IP=1.2.3.4      IP for generated configs (default: localhost)"
+    echo ""
+    echo "Port allocation (200 instances):"
+    echo "  Web:        10005 - 10204"
+    echo "  SMTP:       2525  - 2724"
+    echo "  IMAP:       1143  - 1342"
+    echo "  Submission: 1587  - 1786"
+    exit 1
+    ;;
+esac
