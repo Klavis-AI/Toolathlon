@@ -4,6 +4,7 @@ from utils.general.helper import run_command
 from argparse import ArgumentParser
 from utils.general.helper import read_json,print_color
 from utils.app_specific.poste.ops import clear_folder
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 involved_emails_file = os.path.join(os.path.dirname(__file__), "..", "files", "involved_emails.json")
 print('file path: ', involved_emails_file)
@@ -26,7 +27,7 @@ if __name__=="__main__":
     # exit(0)
 
     # we also need to clear some folders for the emails
-    involved_emails = read_json(involved_emails_file)
+    involved_emails = load_and_rewrite_json(involved_emails_file)
     for role in involved_emails:
         for email_address, config in involved_emails[role].items():
             full_config = {"email": email_address, **config}

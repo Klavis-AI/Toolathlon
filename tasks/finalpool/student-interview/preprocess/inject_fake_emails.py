@@ -1,8 +1,13 @@
 import imaplib
 import json
+import os
+import sys
 import random
 import re
 from pathlib import Path
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
+from utils.app_specific.poste.domain_utils import rewrite_domain
 from datetime import datetime, timedelta
 from time import sleep
 from email.mime.text import MIMEText
@@ -147,7 +152,7 @@ def load_and_process_fake_emails(fake_emails_file, num_emails=None):
     """Load fake emails and process date placeholders"""
     
     with open(fake_emails_file, 'r', encoding='utf-8') as f:
-        fake_emails = json.load(f)
+        fake_emails = rewrite_domain(json.load(f))
     
     if num_emails is None:
         num_emails = random.randint(50, 100)
@@ -234,8 +239,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # Load email config
+    from utils.app_specific.poste.domain_utils import rewrite_domain
     with open(args.email_config, 'r', encoding='utf-8') as f:
-        email_config = json.load(f)
+        email_config = rewrite_domain(json.load(f))
     
     # Inject fake emails
     success, count = inject_fake_emails(email_config, Path(args.fake_emails_file), args.num_emails)

@@ -4,6 +4,7 @@ from utils.general.helper import read_json
 from utils.general.helper import print_color
 from utils.app_specific.snowflake.helpers import get_table_row_count, row_exists, escape_sql_literal, fq_table_name
 from utils.app_specific.poste.checks import find_sent_emails
+from utils.app_specific.poste.domain_utils import rewrite_domain, load_and_rewrite_json
 
 DB_NAME = "TRAVEL_EXPENSE_REIMBURSEMENT"
 SCHEMA_NAME = "PUBLIC"
@@ -11,7 +12,7 @@ TABLE_NAME = "ENTERPRISE_CONTACTS"
 EXPENSE_TABLE_NAME = "2024Q4REIMBURSEMENT"
 
 involved_emails_file = os.path.join(os.path.dirname(__file__), "..", "files", "involved_emails.json")
-involved_emails = read_json(involved_emails_file)
+involved_emails = load_and_rewrite_json(involved_emails_file)
 sender_config = involved_emails["sender"][next(iter(involved_emails["sender"]))]
 sender_email = next(iter(involved_emails["sender"]))
 sender_config = {"email": sender_email, **sender_config}
@@ -25,7 +26,7 @@ def main():
     args = parser.parse_args()
     
 
-    expense_claims = read_json(os.path.join(args.groundtruth_workspace, "expense_claims.json"))
+    expense_claims = rewrite_domain(read_json(os.path.join(args.groundtruth_workspace, "expense_claims.json")))
 
     # part 1 Build three types of data
     goto_db_items = []
@@ -98,7 +99,7 @@ def main():
     # part 2.5 Check the consistency of the contacts data
     contacts_table_fq = fq_table_name(DB_NAME, SCHEMA_NAME, TABLE_NAME)
     try:
-        contacts_groundtruth = read_json(os.path.join(args.groundtruth_workspace, "enterprise_contacts.json"))
+        contacts_groundtruth = rewrite_domain(read_json(os.path.join(args.groundtruth_workspace, "enterprise_contacts.json")))
     except Exception as e:
         print_color(f"[ERROR] Failed to load enterprise_contacts.json: {e}", "red")
         return False

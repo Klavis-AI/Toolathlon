@@ -12,6 +12,7 @@ sys.path.insert(0, project_root)
 from utils.app_specific.snowflake.client import fetch_all_dict, execute_query
 from utils.app_specific.poste.ops import mailbox_has_email_matching_body, find_emails_from_sender
 from utils.general.helper import print_color, normalize_str
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 # Import task-specific config
 task_root = os.path.join(current_dir, '..')
@@ -31,8 +32,7 @@ def get_snowflake_current_time():
 
 
 def load_groundtruth(path: str) -> dict:
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    return load_and_rewrite_json(path)
 
 
 def parse_launch_date(launch_time: str) -> datetime:
@@ -229,8 +229,7 @@ def get_overdue_employees(gt, launch_dt):
 
 def load_email_configs():
     email_config_file = os.path.join(os.path.dirname(__file__), '..', 'groundtruth_workspace', 'involved_emails.json')
-    with open(email_config_file, 'r', encoding='utf-8') as f:
-        involved_emails_data = json.load(f)
+    involved_emails_data = load_and_rewrite_json(email_config_file)
     
     all_email_configs = {email: {**config, "email": email} for email, config in involved_emails_data["should_or_shouldnt_receive"].items()}
     sender_email = next(iter(involved_emails_data["sender"]))

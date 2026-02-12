@@ -158,8 +158,41 @@ class MCPServerManager:
             for key, value in self.local_token_key_session.items():
                 if isinstance(value, (str, int, float, bool)):  # Only process basic types
                     template_vars[f'token.{key}'] = str(value)
+
+        # Multi-instance email domain isolation:
+        # create a domain-rewritten copy of the
+        # email config file so the MCP email tool connects to the correct domain.
+        from utils.app_specific.poste.domain_utils import get_email_domain, DEFAULT_DOMAIN
+        email_domain = get_email_domain()
+        if email_domain != DEFAULT_DOMAIN:
+            emails_cfg_path = template_vars.get('token.emails_config_file')
+            if emails_cfg_path and os.path.isfile(emails_cfg_path):
+                rewritten_path = self._get_rewritten_email_config(emails_cfg_path, email_domain)
+                template_vars['token.emails_config_file'] = rewritten_path
         
         return template_vars
+
+    def _get_rewritten_email_config(self, original_path: str, target_domain: str) -> str:
+        """Create a domain-rewritten copy of an email config JSON in the agent workspace.
+        
+        Returns the path to the rewritten copy. The copy is placed under
+        {agent_workspace}/.email_config_rewritten.json to avoid cluttering the workspace.
+        """
+        from utils.app_specific.poste.domain_utils import rewrite_domain, DEFAULT_DOMAIN
+        import json
+
+        rewritten_path = os.path.join(self.agent_workspace, ".email_config_rewritten.json")
+        try:
+            with open(original_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            data = rewrite_domain(data, source=DEFAULT_DOMAIN, target=target_domain)
+            os.makedirs(os.path.dirname(rewritten_path), exist_ok=True)
+            with open(rewritten_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return rewritten_path
+        except Exception as e:
+            print(f"Warning: Failed to rewrite email config for domain {target_domain}: {e}")
+            return original_path
 
     def _process_config_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Process template variables in configuration parameters"""

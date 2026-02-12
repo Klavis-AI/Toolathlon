@@ -6,6 +6,7 @@ This module provides a comprehensive interface for managing Canvas courses,
 users, enrollments, and other resources using the Canvas REST API.
 """
 
+import sys
 import requests
 import csv
 import os
@@ -13,6 +14,10 @@ import glob
 from typing import Optional, Dict, List, Tuple
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from utils.app_specific.poste.domain_utils import rewrite_domain as _rewrite_domain
 
 
 class CanvasAPI:
@@ -413,7 +418,7 @@ class CanvasAPI:
                         break
                     
                     name = row.get('Name', '').strip()
-                    email = row.get('email', '').strip()
+                    email = _rewrite_domain(row.get('email', '').strip())
                     
                     if name and email:
                         students.append((name, email))
@@ -1275,7 +1280,7 @@ class CourseInitializer:
     def initialize_course(self, course_name: str, course_code: str, 
                          csv_file_path: str, student_limit: Optional[int] = None,
                          account_id: int = 1, add_self_as_teacher: bool = True,
-                         teacher_email: Optional[str] = "bruiz@mcp.com", publish: bool = True, 
+                         teacher_email: Optional[str] = None, publish: bool = True, 
                          **course_kwargs) -> Optional[Dict]:
         """
         Initialize a complete course with students and teacher
@@ -1294,6 +1299,10 @@ class CourseInitializer:
         Returns:
             Course data or None if error
         """
+        if teacher_email is None:
+            from utils.app_specific.poste.domain_utils import domain_str
+            teacher_email = domain_str("bruiz")
+
         print(f"\n🚀 Initializing course: {course_name} ({course_code})")
         print("=" * 60)
         

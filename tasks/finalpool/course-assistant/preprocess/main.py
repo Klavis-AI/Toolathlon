@@ -12,6 +12,8 @@ from typing import Dict, List, Union
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
+
 from clean_local_emails import clean_multiple_accounts
 
 if __name__ == "__main__":
@@ -27,8 +29,7 @@ if __name__ == "__main__":
     # Use the clean_local_emails module logic: read from emails_all_config.json and clean in batch
     
     config_path = os.path.abspath(os.path.join(current_dir, '..', 'emails_all_config.json'))
-    with open(config_path, 'r', encoding='utf-8') as f:
-        accounts_to_clean: Union[Dict[str, str], List[Dict[str, str]]] = json.load(f)
+    accounts_to_clean: Union[Dict[str, str], List[Dict[str, str]]] = load_and_rewrite_json(config_path)
     
     clean_success = clean_multiple_accounts(accounts_to_clean)
     if not clean_success:
@@ -38,8 +39,7 @@ if __name__ == "__main__":
 
     # Read single receiver config
     receiver_config_path = os.path.abspath(os.path.join(current_dir, '..', 'emails_config.json'))
-    with open(receiver_config_path, 'r', encoding='utf-8') as f:
-        receiver_config: Dict[str, str] = json.load(f)
+    receiver_config: Dict[str, str] = load_and_rewrite_json(receiver_config_path)
     receiver = receiver_config["email"]
 
     # Paths for emails data and placeholders

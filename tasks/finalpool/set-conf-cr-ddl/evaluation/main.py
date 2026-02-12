@@ -53,7 +53,7 @@ def compare_google_calendar_times(pred_google_time, groundtruth_iso_time, tolera
     return diff <= tolerance_seconds
 
 async def main(args):
-    xx_MCPServerManager = MCPServerManager(agent_workspace="./") # a pseudo server manager
+    xx_MCPServerManager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))) # a pseudo server manager
     google_calendar_server = xx_MCPServerManager.servers['google_calendar']
     async with google_calendar_server as server:
         today_file_path = Path(__file__).parent.parent / "groundtruth_workspace" / "today.txt"

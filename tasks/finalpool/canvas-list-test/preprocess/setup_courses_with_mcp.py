@@ -67,6 +67,7 @@ else:
 # Import app_specific Canvas modules and tools
 from utils.app_specific.canvas import CanvasAPI, AnnouncementManager, QuizManager
 from utils.app_specific.canvas.tools import delete_all_courses as tool_delete_all_courses
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 CANVAS_API_TOKEN = all_token_key_session.admin_canvas_token
 CANVAS_USER_NAME = all_token_key_session.canvas_user_name
@@ -102,11 +103,11 @@ class CanvasCourseSetup:
             script_dir = Path(__file__).parent.parent
             # Load course configuration
             with open(script_dir / 'files' / 'course_config.json', 'r') as f:
-                self.courses_data = json.load(f)
+                self.courses_data = rewrite_domain(json.load(f))
             
             # Load users data
             with open(script_dir / 'files' / 'canvas_users.json', 'r') as f:
-                self.users_data = json.load(f)
+                self.users_data = rewrite_domain(json.load(f))
                 
             logger.info("Data loaded successfully")
             print("📊 Data loaded successfully")

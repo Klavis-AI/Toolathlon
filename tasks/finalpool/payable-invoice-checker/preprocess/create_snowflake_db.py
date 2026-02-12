@@ -167,15 +167,17 @@ async def generate_invoice_data():
         return unique_id
 
     # Email list for interference data, avoiding overlap with ground truth emails
+    from utils.app_specific.poste.domain_utils import get_email_domain
+    _domain = get_email_domain()
     interference_buyer_emails = [
-        "JSmith@mcp.com",
-        "MBrown@mcp.com",
-        "AWilliams@mcp.com",
-        "RJohnson@mcp.com",
-        "LDavis@mcp.com",
-        "KWilson@mcp.com",
-        "TMiller@mcp.com",
-        "SAnderson@mcp.com"
+        f"JSmith@{_domain}",
+        f"MBrown@{_domain}",
+        f"AWilliams@{_domain}",
+        f"RJohnson@{_domain}",
+        f"LDavis@{_domain}",
+        f"KWilson@{_domain}",
+        f"TMiller@{_domain}",
+        f"SAnderson@{_domain}"
     ]
 
     # Generate 1000 interference records using earlier years
@@ -312,7 +314,8 @@ async def export_database_to_jsonl():
     mcp_manager = MCPServerManager(
         agent_workspace="./",
         config_dir="configs/mcp_servers",
-        local_token_key_session=local_token_key_session
+        local_token_key_session=local_token_key_session,
+        server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
     )
 
     try:
@@ -440,7 +443,8 @@ async def initialize_database():
     mcp_manager = MCPServerManager(
         agent_workspace="./",
         config_dir="configs/mcp_servers",
-        local_token_key_session=local_token_key_session
+        local_token_key_session=local_token_key_session,
+        server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
     )
     
     try:

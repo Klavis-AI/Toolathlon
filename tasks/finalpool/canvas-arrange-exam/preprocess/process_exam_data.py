@@ -6,8 +6,12 @@ Extract exam information from course_config.json and write into exam_schedule.cs
 
 import json
 import csv
+import sys
 from pathlib import Path
 from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def load_course_config():
     """Load the course configuration file."""
@@ -17,7 +21,7 @@ def load_course_config():
         raise FileNotFoundError(f"Course configuration file does not exist: {config_file}")
     
     with open(config_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        return rewrite_domain(json.load(f))
 
 def extract_exam_info(course_data):
     """Extract exam information from course data."""

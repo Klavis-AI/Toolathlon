@@ -32,6 +32,8 @@ except ImportError:
     get_google_service = None
     all_token_key_session = None
 
+from utils.app_specific.poste.domain_utils import get_email_domain, load_and_rewrite_json
+
 class StockAlertEvaluator:
     """Evaluator for stock alert system validation"""
 
@@ -39,7 +41,7 @@ class StockAlertEvaluator:
         self.agent_workspace = agent_workspace
         self.task_dir = Path(__file__).parent.parent
         self.initial_workspace = self.task_dir / "initial_workspace"
-        self.purchasing_manager_email = "laura_thompson@mcp.com"
+        self.purchasing_manager_email = f"laura_thompson@{get_email_domain()}"
 
         # Expected new low-stock products based on your requirements
         self.expected_new_products = [
@@ -271,8 +273,7 @@ class StockAlertEvaluator:
                 return False, "Email configuration not available"
             
             config_path = all_token_key_session.emails_config_file
-            with open(config_path, 'r') as f:
-                config = json.load(f)
+            config = load_and_rewrite_json(config_path)
 
             # Connect to IMAP server to check Sent folder
             if config.get('use_ssl', False):

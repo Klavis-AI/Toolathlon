@@ -6,10 +6,16 @@ Updates exam_time and due_at dates to the next day of current datetime
 """
 
 import json
+import os
+import sys
 import re
 from datetime import datetime, timedelta
 from typing import Dict, Any
 from pathlib import Path
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+sys.path.insert(0, project_root)
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 
 def get_next_day() -> datetime:
@@ -83,7 +89,7 @@ def update_config_dates(config_path: str, output_path: str = None) -> None:
     
     # Read configuration
     with open(config_path, 'r', encoding='utf-8') as f:
-        config = json.load(f)
+        config = rewrite_domain(json.load(f))
     
     # Get next day
     next_day = get_next_day()

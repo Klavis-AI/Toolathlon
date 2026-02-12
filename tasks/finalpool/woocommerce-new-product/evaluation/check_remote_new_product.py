@@ -23,10 +23,12 @@ sys.path.insert(0, task_dir)
 try:
     from token_key_session import all_token_key_session
     from preprocess.woocommerce_client import WooCommerceClient
+    from utils.app_specific.poste.domain_utils import rewrite_domain
 except ImportError:
     sys.path.append(os.path.join(task_dir, 'preprocess'))
     from token_key_session import all_token_key_session
     from woocommerce_client import WooCommerceClient
+    from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def check_remote_new_product_execution(agent_workspace: str, groundtruth_workspace: str, res_log: Dict) -> Tuple[bool, str]:
     """
@@ -268,7 +270,7 @@ def check_email_sending(agent_workspace: str, wc_client: WooCommerceClient) -> T
         try:
             config_path = all_token_key_session.emails_config_file
             with open(config_path, 'r') as f:
-                config = json.load(f)
+                config = rewrite_domain(json.load(f))
         except Exception as e:
             return False, f"Cannot load email config: {e}"
 

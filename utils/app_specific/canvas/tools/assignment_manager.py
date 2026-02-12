@@ -276,7 +276,8 @@ Examples:
             # Get all students from the course (this would require additional API call)
             print("📧 Targeting all course students...")
             # For demo, use a sample list - in real implementation, you'd get from course enrollment
-            student_emails = ['stephanie.cox@mcp.com', 'james.thomas30@mcp.com']
+            from utils.app_specific.poste.domain_utils import domain_str
+            student_emails = [domain_str('stephanie.cox'), domain_str('james.thomas30')]
             print(f"   Using sample students: {student_emails}")
         
         stats = canvas.batch_message_students(

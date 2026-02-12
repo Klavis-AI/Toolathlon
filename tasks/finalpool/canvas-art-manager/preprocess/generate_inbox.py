@@ -5,16 +5,20 @@ Generate inbox JSON file by merging fake_emails.json and target_emails.json
 
 import json
 import random
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 import re
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 
 def load_json_file(file_path):
     """Load JSON data from file"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            return rewrite_domain(json.load(f))
     except Exception as e:
         print(f"❌ Error loading {file_path}: {e}")
         return []

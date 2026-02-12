@@ -10,15 +10,20 @@ import re
 from datetime import datetime, timedelta, timezone
 import os
 from utils.general.helper import normalize_str
+from utils.app_specific.poste.domain_utils import get_email_domain, domain_str
 
-def check_local_email(target_email="jjones@mcp.com", agent_email="donna_castillo56@mcp.com"):
+def check_local_email(target_email=None, agent_email=None):
+    if target_email is None:
+        target_email = domain_str("jjones")
+    if agent_email is None:
+        agent_email = domain_str("donna_castillo56")
     """Check if email was sent to target recipient with correct content via local IMAP"""
     try:
         # Connect to local IMAP server
         imap_server = imaplib.IMAP4('localhost', 1143)
 
         # Login as admin to check received emails
-        imap_server.login('jjones@mcp.com', 'jessica1987%')
+        imap_server.login(domain_str('jjones'), 'jessica1987%')
 
         # Select inbox
         imap_server.select('INBOX')

@@ -5,15 +5,21 @@ Script to extract quiz information from course_config.json and save to CSV.
 
 import json
 import csv
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+sys.path.insert(0, project_root)
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def parse_quiz_data(json_file_path, output_csv_path):
     """Extract quiz information from course_config.json and save to CSV."""
     
     # Read the JSON file
     with open(json_file_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        data = rewrite_domain(json.load(f))
     
     quiz_data = []
     
@@ -100,7 +106,7 @@ def parse_assign_data(json_file_path, output_csv_path):
     
     # Read the JSON file
     with open(json_file_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        data = rewrite_domain(json.load(f))
     
     assign_data = []
     

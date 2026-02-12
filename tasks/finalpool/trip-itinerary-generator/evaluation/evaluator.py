@@ -1,4 +1,5 @@
 import json
+import os
 import asyncio
 import sys
 from pathlib import Path
@@ -28,7 +29,7 @@ async def evaluate_itinerary_with_maps(submission_path: str, initial_workspace_p
     print(f"wishlist attractions: {wishlist_attractions}")
     
     # initialize MCP manager
-    mcp_manager = MCPServerManager(agent_workspace="./")
+    mcp_manager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     server = mcp_manager.servers['google_map']
     
     async with server:

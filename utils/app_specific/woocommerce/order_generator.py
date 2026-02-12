@@ -52,30 +52,32 @@ class OrderGenerationConfig:
 class OrderDataGenerator:
     """Generic order data generator for WooCommerce testing"""
 
-    # Default customer dataset
+    # Default customer dataset — domain is resolved at runtime for multi-instance support
+    from utils.app_specific.poste.domain_utils import domain_str as _ds
     DEFAULT_CUSTOMERS = [
-        CustomerData("Nancy Hill", "nancy.hill@mcp.com"),
-        CustomerData("Cynthia Mendoza", "cynthia.mendoza@mcp.com"),
-        CustomerData("Eric Jackson", "ejackson@mcp.com"),
-        CustomerData("Amanda Evans", "aevans@mcp.com"),
-        CustomerData("Kathleen Jones", "kathleen.jones@mcp.com"),
-        CustomerData("Henry Howard", "henry_howard51@mcp.com"),
-        CustomerData("Frances Miller", "frances.miller@mcp.com"),
-        CustomerData("Jessica Patel", "jessicap@mcp.com"),
-        CustomerData("Ryan Myers", "rmyers81@mcp.com"),
-        CustomerData("Zachary Baker", "zachary.baker53@mcp.com"),
-        CustomerData("Pamela Brooks", "pbrooks@mcp.com"),
-        CustomerData("Eric Torres", "etorres4@mcp.com"),
-        CustomerData("Tyler Perez", "tyler_perez28@mcp.com"),
-        CustomerData("Janet Brown", "brownj@mcp.com"),
-        CustomerData("Amanda Wilson", "wilsona@mcp.com"),
-        CustomerData("Dorothy Adams", "dorothya69@mcp.com"),
-        CustomerData("Aaron Clark", "aaron.clark@mcp.com"),
-        CustomerData("Deborah Rodriguez", "drodriguez@mcp.com"),
-        CustomerData("David Lopez", "davidl35@mcp.com"),
-        CustomerData("Karen White", "karen.white66@mcp.com"),
-        CustomerData("Alexander Williams", "alexander_williams@mcp.com"),
+        CustomerData("Nancy Hill", _ds("nancy.hill")),
+        CustomerData("Cynthia Mendoza", _ds("cynthia.mendoza")),
+        CustomerData("Eric Jackson", _ds("ejackson")),
+        CustomerData("Amanda Evans", _ds("aevans")),
+        CustomerData("Kathleen Jones", _ds("kathleen.jones")),
+        CustomerData("Henry Howard", _ds("henry_howard51")),
+        CustomerData("Frances Miller", _ds("frances.miller")),
+        CustomerData("Jessica Patel", _ds("jessicap")),
+        CustomerData("Ryan Myers", _ds("rmyers81")),
+        CustomerData("Zachary Baker", _ds("zachary.baker53")),
+        CustomerData("Pamela Brooks", _ds("pbrooks")),
+        CustomerData("Eric Torres", _ds("etorres4")),
+        CustomerData("Tyler Perez", _ds("tyler_perez28")),
+        CustomerData("Janet Brown", _ds("brownj")),
+        CustomerData("Amanda Wilson", _ds("wilsona")),
+        CustomerData("Dorothy Adams", _ds("dorothya69")),
+        CustomerData("Aaron Clark", _ds("aaron.clark")),
+        CustomerData("Deborah Rodriguez", _ds("drodriguez")),
+        CustomerData("David Lopez", _ds("davidl35")),
+        CustomerData("Karen White", _ds("karen.white66")),
+        CustomerData("Alexander Williams", _ds("alexander_williams")),
     ]
+    del _ds
 
     # Default product dataset
     DEFAULT_PRODUCTS = [

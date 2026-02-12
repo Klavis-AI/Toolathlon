@@ -7,8 +7,16 @@ Uses IMAP protocol to clear all emails in local mailboxes.
 import imaplib
 import email
 import os
+import sys
 import json
 from typing import Dict, Tuple, List, Union
+from pathlib import Path
+
+# Add project root to sys.path for domain_utils import
+_project_root = str(Path(__file__).parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 def clean_local_emails(email_config: Dict[str, str]) -> Tuple[bool, int]:
     """
@@ -137,8 +145,7 @@ if __name__ == "__main__":
     try:
         current_dir = os.path.dirname(__file__)
         config_path = os.path.abspath(os.path.join(current_dir, '..', 'emails_all_config.json'))
-        with open(config_path, 'r', encoding='utf-8') as f:
-            raw_config: Union[Dict[str, str], List[Dict[str, str]]] = json.load(f)
+        raw_config: Union[Dict[str, str], List[Dict[str, str]]] = load_and_rewrite_json(config_path)
 
         # Only support cleaning from a list
         if not isinstance(raw_config, list):

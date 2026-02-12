@@ -38,10 +38,11 @@ class RunLifecycle(RunHooks):
         context: RunContextWrapper[TContext],
         agent: Agent[TContext],
         tool: Tool,
+        arguments: str = "",
     ) -> None:
         """Hook for Tool start"""
         if self.debug:
-            print_color(f'>>>>Invoking tool: {tool.name}', "cyan")
+            print_color(f'>>>>Invoking tool: {tool.name} | params: {arguments[:500] if arguments else arguments}', "cyan")
         
     async def on_tool_end(
         self,
@@ -52,4 +53,4 @@ class RunLifecycle(RunHooks):
     ) -> None:
         """Hook for Tool end"""
         if self.debug:
-            print_color(f'>>>>Tool execution result: {tool.name}', "cyan")
+            print_color(f'>>>>Tool result: {tool.name} | response: {result[:500] if result else result}', "cyan")

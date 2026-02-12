@@ -244,6 +244,7 @@ async def main():
         config_dir="configs/mcp_servers",
         debug=True,
         local_token_key_session=tokens.to_dict() if hasattr(tokens, "to_dict") else dict(tokens),
+        server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")),
     ) as manager:
         ykey = "yahoo-finance" if "yahoo-finance" in manager.servers else ("yahoo-finance-mcp" if "yahoo-finance-mcp" in manager.servers else None)
         if not ykey:

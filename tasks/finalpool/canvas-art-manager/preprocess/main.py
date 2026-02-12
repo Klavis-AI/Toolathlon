@@ -21,6 +21,7 @@ import asyncio
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 from utils.app_specific.canvas import CanvasAPI
+from utils.app_specific.poste.domain_utils import get_email_domain, domain_str
 
 def run_command(command, description="", check=True, shell=True):
     """Run a command and handle output"""
@@ -216,7 +217,8 @@ async def delete_all_courses_via_mcp(target_course_names):
             agent_workspace=str(workspace),
             config_dir=str(toolathlon_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session
+            local_token_key_session=local_token_key_session,
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
 
         # Connect to canvas server specifically
@@ -385,7 +387,7 @@ if __name__ == "__main__":
 
     imap_server = "localhost"
     imap_port = 1143
-    to_email = "mcpcanvasadmin3@mcp.com"  # Target inbox email
+    to_email = domain_str("mcpcanvasadmin3")  # Target inbox email
 
     # Clear the entire inbox
     clear_inbox(

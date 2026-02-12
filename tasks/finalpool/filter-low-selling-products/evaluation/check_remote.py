@@ -21,11 +21,13 @@ try:
     from token_key_session import all_token_key_session
     from utils.app_specific.woocommerce.client import WooCommerceClient
     from utils.app_specific.poste.local_email_manager import LocalEmailManager
+    from utils.app_specific.poste.domain_utils import rewrite_domain
 except ImportError:
     sys.path.append(os.path.join(task_dir, 'preprocess'))
     from token_key_session import all_token_key_session
     from utils.app_specific.woocommerce.client import WooCommerceClient
     from utils.app_specific.poste.local_email_manager import LocalEmailManager
+    from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def check_remote(agent_workspace: str, groundtruth_workspace: str, res_log: Dict) -> Tuple[bool, str]:
     """
@@ -335,7 +337,7 @@ def check_email_sending(agent_workspace: str, wc_client: WooCommerceClient) -> T
         # Read subscriber information
         subscriber_path = os.path.join(agent_workspace, 'subscriber.json')
         with open(subscriber_path, 'r', encoding='utf-8') as f:
-            subscriber_config = json.load(f)
+            subscriber_config = rewrite_domain(json.load(f))
 
         subscribers = subscriber_config.get('subscriber_list', [])
         if not subscribers:
