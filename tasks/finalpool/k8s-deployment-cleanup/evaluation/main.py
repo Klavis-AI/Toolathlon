@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple, Any
 
 from utils.general.helper import normalize_str, read_json, print_color
 from utils.app_specific.poste.ops import find_emails_from_sender, mailbox_has_email_matching_body
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 
 VERBOSE = False
@@ -524,7 +525,7 @@ def main() -> int:
 
     # ---------- Part 2: Email checks ----------
     involved_emails_file = os.path.join(task_dir, "files", "involved_emails.json")
-    involved_emails_data = read_json(involved_emails_file)
+    involved_emails_data = load_and_rewrite_json(involved_emails_file)
 
     # Sender info
     sender_email = next(iter(involved_emails_data["sender"]))

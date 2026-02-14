@@ -471,6 +471,37 @@ async def specifical_inialize_for_mcp(task_config):
         assert os.path.exists(cache_dir)
         print("[playwright] playwright file output dir has been established")
 
+    # Multi-instance email domain isolation:
+    # Rewrite @mcp.com → @{KLAVIS_EMAIL_DOMAIN} in all text files within agent_workspace.
+    # This covers initial_workspace files copied for the agent (JSON, CSV, TXT, etc.).
+    from utils.app_specific.poste.domain_utils import get_email_domain, DEFAULT_DOMAIN
+    email_domain = get_email_domain()
+    if email_domain != DEFAULT_DOMAIN:
+        _rewrite_workspace_email_domain(task_config.agent_workspace, email_domain)
+
+def _rewrite_workspace_email_domain(workspace_dir: str, target_domain: str) -> None:
+    """Rewrite @mcp.com in all text files under the agent workspace to target_domain."""
+    from utils.app_specific.poste.domain_utils import DEFAULT_DOMAIN
+    old_token = f"@{DEFAULT_DOMAIN}"
+    new_token = f"@{target_domain}"
+    text_extensions = {'.json', '.jsonl', '.csv', '.txt', '.md', '.yaml', '.yml'}
+    count = 0
+    for root, _dirs, files in os.walk(workspace_dir):
+        for fname in files:
+            if os.path.splitext(fname)[1].lower() in text_extensions:
+                fpath = os.path.join(root, fname)
+                try:
+                    with open(fpath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    if old_token in content:
+                        with open(fpath, 'w', encoding='utf-8') as f:
+                            f.write(content.replace(old_token, new_token))
+                        count += 1
+                except (UnicodeDecodeError, PermissionError):
+                    pass
+    if count > 0:
+        print(f"[email-domain] Rewrote @mcp.com → @{target_domain} in {count} workspace file(s)")
+
 def build_user_client(user_config: UserConfig) -> AsyncOpenAIClientWithRetry:
     """Build user client"""
     return AsyncOpenAIClientWithRetry(

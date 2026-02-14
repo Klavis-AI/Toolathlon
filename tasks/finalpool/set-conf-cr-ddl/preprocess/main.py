@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ import asyncio
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from token_key_session import all_token_key_session
 from utils.app_specific.poste.email_import_utils import clear_all_email_folders
+from utils.app_specific.poste.domain_utils import rewrite_json_file_in_place
 from utils.mcp.tool_servers import MCPServerManager, call_tool_with_retry, ToolCallError
 
 async def clear_google_calendar():
@@ -21,7 +23,7 @@ async def clear_google_calendar():
     try:
         # Initialize MCP Server Manager
         print("🔧 Initializing MCP Server Manager...")
-        mcp_manager = MCPServerManager(agent_workspace="./", local_token_key_session=all_token_key_session, debug=True)
+        mcp_manager = MCPServerManager(agent_workspace="./", local_token_key_session=all_token_key_session, debug=True, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
 
         # Connect to Google Calendar server
         print("🔗 Connecting to Google Calendar server...")
@@ -101,23 +103,41 @@ async def import_emails_via_mcp(backup_file: str):
     """
     Import emails using the MCP emails server.
     """
+    import json as _json
     from utils.mcp.tool_servers import MCPServerManager, call_tool_with_retry, ToolCallError
 
     print(f"Importing emails via MCP emails server...")
 
+    use_remote = bool(os.environ.get("KLAVIS_API_KEY"))
+
     agent_workspace = "./"
-    mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session=all_token_key_session)
+    mcp_manager = MCPServerManager(agent_workspace=agent_workspace, local_token_key_session=all_token_key_session, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     emails_server = mcp_manager.servers['emails']
 
     async with emails_server as server:
         try:
-            result = await call_tool_with_retry(
-                server,
-                "import_emails",
-                {
+            if use_remote:
+                # Remote Cloud Run server: read file locally and pass JSON string
+                with open(backup_file, 'r', encoding='utf-8') as f:
+                    json_content = f.read()
+                tool_args = {
+                    "json_string": json_content,
+                    "target_folder": "INBOX",
+                    "preserve_folders": False
+                }
+                print(f"Using remote MCP server (KLAVIS_API_KEY set), sending JSON string")
+            else:
+                # Local MCP server: pass file path directly
+                tool_args = {
                     "import_path": backup_file,
                     "folder": "INBOX"
                 }
+                print(f"Using local MCP server, passing file path")
+
+            result = await call_tool_with_retry(
+                server,
+                "import_emails",
+                tool_args
             )
 
             if result.content:
@@ -166,6 +186,9 @@ if __name__=="__main__":
             print(f"❌ Email backup file does not exist: {backup_file}")
             print("Please run convert_emails.py first to generate the email backup file")
             sys.exit(1)
+
+        # Rewrite @mcp.com in the backup file to match the current email domain
+        rewrite_json_file_in_place(str(backup_file))
 
         print("\n" + "=" * 60)
         print("Importing emails into local email system")

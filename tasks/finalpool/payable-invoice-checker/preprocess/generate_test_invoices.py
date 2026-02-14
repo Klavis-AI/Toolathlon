@@ -502,13 +502,15 @@ SUPPLIERS_CONFIG = {
     }
 }
 
+from utils.app_specific.poste.domain_utils import get_email_domain as _get_domain
+_d = _get_domain()
 BUYERS_CONFIG = {
-    "dcooper@mcp.com": "Dennis Cooper - Purchasing Department",
-    "turnerj@mcp.com": "Jose Turner - Purchasing Department", 
-    "anthony_murphy24@mcp.com": "Anthony Murphy - Purchasing Department",
-    "cturner@mcp.com": "Carol Turner - Purchasing Department",
-    "ashley_anderson@mcp.com": "Ashley Anderson - Purchasing Department",
-    "brenda_rivera81@mcp.com": "Brenda Rivera - Purchasing Department"
+    f"dcooper@{_d}": "Dennis Cooper - Purchasing Department",
+    f"turnerj@{_d}": "Jose Turner - Purchasing Department", 
+    f"anthony_murphy24@{_d}": "Anthony Murphy - Purchasing Department",
+    f"cturner@{_d}": "Carol Turner - Purchasing Department",
+    f"ashley_anderson@{_d}": "Ashley Anderson - Purchasing Department",
+    f"brenda_rivera81@{_d}": "Brenda Rivera - Purchasing Department"
 }
 
 ITEMS_TEMPLATES = {

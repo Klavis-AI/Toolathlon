@@ -44,7 +44,7 @@ async def setup_calendar_events(credentials_file: str):
     # Initialize MCP server manager
     try:
         print("\n🔧 Initializing MCP server manager...")
-        mcp_manager = MCPServerManager(agent_workspace="./", debug=True)
+        mcp_manager = MCPServerManager(agent_workspace="./", debug=True, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
         
         # Connect Google Calendar server
         print("🔗 Connecting Google Calendar server...")

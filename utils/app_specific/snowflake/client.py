@@ -24,22 +24,37 @@ def _build_conn_kwargs() -> dict:
         'warehouse': GLOBAL_TOKENS.snowflake_warehouse,
         'role': GLOBAL_TOKENS.snowflake_role,
     }
-    private_key_path = getattr(GLOBAL_TOKENS, 'snowflake_private_key_path', None)
-    private_key_bytes = None
-    if private_key_path:
-        with open(private_key_path, 'rb') as key_file:
-            private_key_obj = serialization.load_pem_private_key(
-                key_file.read(),
-                password=None, 
-                backend=default_backend()
-            )
+    private_key_content = getattr(GLOBAL_TOKENS, 'snowflake_private_key', None)
+    
+    # Fallback to path if content is not available
+    if not private_key_content:
+        private_key_path = getattr(GLOBAL_TOKENS, 'snowflake_private_key_path', None)
+        if private_key_path:
+            with open(private_key_path, 'rb') as key_file:
+                private_key_content = key_file.read()
 
-            private_key_bytes = private_key_obj.private_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            )
-    if private_key_bytes:
+    if private_key_content:
+        private_key_pass = getattr(GLOBAL_TOKENS, 'snowflake_private_key_passphrase', None)
+        
+        # Handle string content (e.g. from env var)
+        if isinstance(private_key_content, str):
+            if "\\n" in private_key_content:
+                private_key_content = private_key_content.replace("\\n", "\n")
+            private_key_bytes_input = private_key_content.encode("utf-8")
+        else:
+            private_key_bytes_input = private_key_content
+
+        private_key_obj = serialization.load_pem_private_key(
+            private_key_bytes_input,
+            password=private_key_pass.encode() if private_key_pass else None,
+            backend=default_backend()
+        )
+
+        private_key_bytes = private_key_obj.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
         kwargs['private_key'] = private_key_bytes
     if getattr(GLOBAL_TOKENS, 'snowflake_database', None):
         kwargs['database'] = GLOBAL_TOKENS.snowflake_database

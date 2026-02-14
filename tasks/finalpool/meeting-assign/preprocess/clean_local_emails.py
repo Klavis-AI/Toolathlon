@@ -1,6 +1,7 @@
 import imaplib
 import json
 import sys
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def clean_emails(config, clean=True):
     """
@@ -67,7 +68,7 @@ def clean_emails(config, clean=True):
         print(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
-    config = receiver_config={
+    config = receiver_config=rewrite_domain({
         "email": "jjones@mcp.com",
         "password": "jessica1987%",
         "name": "Meeting Assignment Agent",
@@ -77,6 +78,6 @@ if __name__ == "__main__":
         "smtp_port": 1587,
         "use_ssl": False,
         "use_starttls": False
-    }
+    })
 
     clean_emails(config, clean=False)

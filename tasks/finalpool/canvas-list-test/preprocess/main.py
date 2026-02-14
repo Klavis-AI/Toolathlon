@@ -24,6 +24,10 @@ from setup_courses_with_mcp import run_with_args as setup_courses_main
 from extract_quiz_info import parse_quiz_data, parse_assign_data
 # from send_exam_notification_smtp import main as send_email_main
 
+project_root = Path(__file__).parent.parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
+from utils.app_specific.poste.domain_utils import rewrite_domain
+
 def update_course_due_dates():
     """Update 'due_at' of each course in course_config.json to about 1 week from now, randomizing within a week."""
     try:
@@ -47,7 +51,7 @@ def update_course_due_dates():
         
         # Load existing config
         with open(config_file_path, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
+            config_data = rewrite_domain(json.load(f))
         
         # Get current timestamp
         current_time = datetime.now()

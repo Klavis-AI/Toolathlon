@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 import asyncio
 from utils.mcp.tool_servers import MCPServerManager, call_tool_with_retry, ToolCallError
@@ -483,7 +484,7 @@ async def main(args):
     next_thursday_date, next_sunday_date = get_dates(log_file)
 
     # 建立服务器连接 (Establish a connection to the server)
-    xx_MCPServerManager = MCPServerManager(agent_workspace="./") # a pseudo server manager
+    xx_MCPServerManager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))) # a pseudo server manager
     rail_12306_server = xx_MCPServerManager.servers['rail_12306']
     
 

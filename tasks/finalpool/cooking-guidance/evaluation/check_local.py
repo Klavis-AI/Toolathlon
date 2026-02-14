@@ -293,7 +293,7 @@ def extract_dish_names_from_cuisine_json(agent_workspace):
 async def get_recipe_ingredients(dish_names):
     """Uses the 'howtocook' tool to get the required ingredients for recipes."""
     # This function remains largely the same, only print statements are translated.
-    mcp_manager = MCPServerManager(agent_workspace="./")
+    mcp_manager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     server = mcp_manager.servers['howtocook']
     
     all_required_ingredients = {}

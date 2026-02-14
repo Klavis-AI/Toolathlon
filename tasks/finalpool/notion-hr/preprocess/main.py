@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(__file__))
 from utils.general.helper import run_command, print_color,read_json
 
 from utils.app_specific.poste.ops import clear_folder
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
 
 NEEDED_SUBPAGE_NAME = "HR Record"
 
@@ -42,7 +43,7 @@ async def main():
     print_color(f"Duplicated page id: {duplicated_page_id}. Process done!","green")
 
     # we also need to clear some folders for the emails
-    involved_emails = read_json(involved_emails_file)
+    involved_emails = load_and_rewrite_json(involved_emails_file)
     for role in involved_emails:
         for email_address, config in involved_emails[role].items():
             # config be 

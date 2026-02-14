@@ -6,7 +6,11 @@ Verify if the config file can be loaded and parsed correctly
 """
 
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 def test_config():
     """Test email configuration file"""
@@ -23,7 +27,7 @@ def test_config():
         
         # Load the config file
         with open(config_file, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+            config = rewrite_domain(json.load(f))
         
         print("✅ Config file loaded successfully!")
         print("\n📊 Config content:")

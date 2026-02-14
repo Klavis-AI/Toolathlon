@@ -13,6 +13,7 @@ python test_enhanced_evaluation.py [--create_test_data] [--test_failures]
 
 import asyncio
 import json
+import os
 import sys
 from argparse import ArgumentParser
 from datetime import datetime, date, timedelta
@@ -374,7 +375,7 @@ async def run_enhanced_evaluation_tests(test_failures=False):
     print("🎯 Starting enhanced game statistics evaluation tests...")
     print(f"📅 Test Date: {date.today().strftime('%Y-%m-%d')}")
     
-    xx_MCPServerManager = MCPServerManager(agent_workspace="./")
+    xx_MCPServerManager = MCPServerManager(agent_workspace="./", server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     google_cloud_server = xx_MCPServerManager.servers['google-cloud']
     
     test_results = []

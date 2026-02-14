@@ -12,6 +12,7 @@ import sys
 import re
 from typing import List, Tuple
 from utils.app_specific.poste.ops import extract_email_body
+from utils.app_specific.poste.domain_utils import get_email_domain
 
 def check_account_emails(email_address: str, password: str, imap_server: str, imap_port: int, use_ssl: bool, required_keywords: List[str], account_label: str) -> Tuple[bool, dict]:
     """Check if emails with subject 'nlp-course-emergency' exist in the specified account, verify email body content, return whether passed and info for valid emails (results are printed as logs)"""
@@ -106,8 +107,8 @@ def main():
     # Read configuration from file
     try:
         cfg_path = os.path.join(os.path.dirname(__file__), 'email_student.json')
-        with open(cfg_path, 'r', encoding='utf-8') as f:
-            cfg = json.load(f)
+        from utils.app_specific.poste.domain_utils import load_and_rewrite_json
+        cfg = load_and_rewrite_json(cfg_path)
     except Exception as e:
         print(f"❌ Failed to read config: {e}")
         return 0
@@ -140,15 +141,16 @@ def main():
     valid_mails = []
 
     # Check inboxes for the specified students to verify receipt of the notification/reminder email
+    domain = get_email_domain()
     for student in student_keywords:
         student_name = student['label']
         # Map student name to their target email according to convention
         if student_name == 'Steven Morgan':
-            target_email = 'smorgan@mcp.com'
+            target_email = f'smorgan@{domain}'
         elif student_name == 'Carolyn Alvarez':
-            target_email = 'calvarez@mcp.com'
+            target_email = f'calvarez@{domain}'
         elif student_name == 'Michelle Brooks':
-            target_email = 'michelle_brooks26@mcp.com'
+            target_email = f'michelle_brooks26@{domain}'
         else:
             target_email = None
 

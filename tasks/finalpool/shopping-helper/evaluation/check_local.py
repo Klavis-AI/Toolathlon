@@ -100,7 +100,7 @@ async def validate_url_with_playwright_mcp(url: str) -> Tuple[bool, str, str]:
     # Initialize MCP server manager with correct workspace path
     import os
     workspace_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
-    mcp_manager = MCPServerManager(agent_workspace=workspace_path)
+    mcp_manager = MCPServerManager(agent_workspace=workspace_path, server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}")))
     server = mcp_manager.servers.get('playwright_with_chunk')
 
     if not server:

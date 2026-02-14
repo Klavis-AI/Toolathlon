@@ -10,12 +10,15 @@ import os
 from pathlib import Path
 from argparse import ArgumentParser
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+from utils.app_specific.poste.domain_utils import rewrite_domain
+
 
 def load_generated_inbox(inbox_path):
     """Load the generated inbox JSON file"""
     try:
         with open(inbox_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            data = rewrite_domain(json.load(f))
         print(f"✅ Loaded inbox with {data['total_emails']} emails")
         print(f"📅 Export date: {data['export_date']}")
         return data
@@ -97,7 +100,8 @@ async def import_emails_via_mcp(inbox_path, target_folder="INBOX", preserve_fold
             agent_workspace=str(workspace),
             config_dir=str(toolathlon_root / "configs" / "mcp_servers"),
             debug=False,
-            local_token_key_session=local_token_key_session  # This is the key part!
+            local_token_key_session=local_token_key_session,  # This is the key part!
+            server_url_overrides=json.loads(os.environ.get("KLAVIS_MCP_SERVER_URLS", "{}"))
         )
         
         # Connect to emails server specifically
@@ -113,13 +117,27 @@ async def import_emails_via_mcp(inbox_path, target_folder="INBOX", preserve_fold
         # Call the import_emails tool
         emails_server = server_manager.connected_servers["emails"]
         
-        args = {
-            "import_path": str(inbox_path),
-            "target_folder": target_folder,
-            "preserve_folders": preserve_folders
-        }
+        use_remote = bool(os.environ.get("KLAVIS_API_KEY"))
+        if use_remote:
+            # Remote Cloud Run server: read file locally and pass JSON string
+            with open(str(inbox_path), 'r', encoding='utf-8') as f:
+                json_content = f.read()
+            args = {
+                "json_string": json_content,
+                "target_folder": target_folder,
+                "preserve_folders": preserve_folders
+            }
+            print(f"Using remote MCP server (KLAVIS_API_KEY set), sending JSON string")
+        else:
+            # Local MCP server: pass file path directly
+            args = {
+                "import_path": str(inbox_path),
+                "target_folder": target_folder,
+                "preserve_folders": preserve_folders
+            }
+            print(f"Using local MCP server, passing file path")
         
-        print(f"🔄 Calling import_emails with args: {args}")
+        print(f"🔄 Calling import_emails...")
         result = await emails_server.call_tool("import_emails", args)
         
         # Process the result

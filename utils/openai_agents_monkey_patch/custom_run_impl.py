@@ -23,7 +23,7 @@ async def my_execute_function_tool_calls(
                 span_fn.span_data.input = tool_call.arguments
             try:
                 _, _, result = await asyncio.gather(
-                    hooks.on_tool_start(context_wrapper, agent, func_tool),
+                    hooks.on_tool_start(context_wrapper, agent, func_tool, tool_call.arguments),
                     (
                         agent.hooks.on_tool_start(context_wrapper, agent, func_tool)
                         if agent.hooks

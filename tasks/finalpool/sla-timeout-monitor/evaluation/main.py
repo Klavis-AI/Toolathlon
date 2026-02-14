@@ -3,6 +3,7 @@ import json
 import os
 from utils.app_specific.poste.ops import find_emails_from_sender, mailbox_has_email_matching_body, check_sender_outbox
 from utils.general.helper import print_color
+from utils.app_specific.poste.domain_utils import get_email_domain, rewrite_domain, load_and_rewrite_json
 
 USER_SECOND_REPLY_TIME = {
     "basic": 72,
@@ -12,8 +13,7 @@ USER_SECOND_REPLY_TIME = {
 
 
 involved_emails_file = os.path.join(os.path.dirname(__file__), "..", "files", "involved_emails.json")
-with open(involved_emails_file, "r", encoding="utf-8") as f:
-    involved_emails_data = json.load(f)
+involved_emails_data = load_and_rewrite_json(involved_emails_file)
 
 all_email_configs = {email:{**config, "email": email} for email, config in involved_emails_data["should_or_shouldnt_receive"].items()}
 sender_email = next(iter(involved_emails_data["sender"]))
@@ -50,7 +50,7 @@ if __name__=="__main__":
 
     sla_monitor_file = os.path.join(args.groundtruth_workspace, "sla_monitoring.jsonl")
     with open(sla_monitor_file, "r", encoding="utf-8") as f:
-        sla_monitor_data = [json.loads(line) for line in f]
+        sla_monitor_data = [rewrite_domain(json.loads(line)) for line in f]
     
 
     interference_file = os.path.join(args.groundtruth_workspace, "interference_tickets.jsonl")
@@ -58,7 +58,7 @@ if __name__=="__main__":
         interference_data = []
     else:
         with open(interference_file, "r", encoding="utf-8") as f:
-            interference_data = [json.loads(line) for line in f]
+            interference_data = [rewrite_domain(json.loads(line)) for line in f]
 
     print_color(f"📊 Loaded {len(sla_monitor_data)} SLA monitoring records", "cyan")
     print_color(f"📊 Loaded {len(interference_data)} interference tickets", "cyan")
@@ -67,9 +67,10 @@ if __name__=="__main__":
     shouldnt_receive_users = []
     interfere_users_and_managers = []
 
+    _domain = get_email_domain()
     managers_to_handle = {
-        "dhall@mcp.com": [],
-        "andersonp@mcp.com": [],
+        f"dhall@{_domain}": [],
+        f"andersonp@{_domain}": [],
     }
 
 

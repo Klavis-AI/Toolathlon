@@ -16,6 +16,8 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from utils.app_specific.poste.domain_utils import rewrite_domain as _rewrite_domain
+
 
 class CanvasAPI:
     """Main Canvas API client providing comprehensive Canvas operations"""
@@ -474,7 +476,7 @@ class CanvasAPI:
                 reader = csv.DictReader(file)
                 for row in reader:
                     name = row.get('Name', '').strip()
-                    email = row.get('email', '').strip()
+                    email = _rewrite_domain(row.get('email', '').strip())
                     
                     if name and email:
                         students.append((name, email))

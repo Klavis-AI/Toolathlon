@@ -24,6 +24,7 @@ sys.path.insert(0, str(current_dir))
 from setup_courses_with_mcp import run_with_args  as setup_courses_main
 # from send_exam_notification_smtp import main as send_email_main
 from token_key_session import all_token_key_session
+from utils.app_specific.poste.domain_utils import get_email_domain
 
 def clear_mailbox() -> Dict:
     """
@@ -32,7 +33,7 @@ def clear_mailbox() -> Dict:
     Returns:
         Clear results dictionary
     """
-    print("📧 Starting to clear mcpcanvasadmin2@mcp.com mailbox...")
+    print(f"📧 Starting to clear mcpcanvasadmin2@{get_email_domain()} mailbox...")
     
     try:
         # mailbox configuration (according to the configuration in check_remote.py)
@@ -165,7 +166,7 @@ async def main(agent_workspace=None, launch_time=None):
         
         # first step: clear mailbox
         print("\n" + "="*60)
-        print("First step: clear mcpcanvasadmin2@mcp.com mailbox")
+        print(f"First step: clear mcpcanvasadmin2@{get_email_domain()} mailbox")
         print("="*60)
         
         mailbox_result = clear_mailbox()

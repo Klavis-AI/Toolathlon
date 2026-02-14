@@ -2,6 +2,10 @@ import json
 import os
 from typing import List, Dict, Any
 
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
+from utils.app_specific.poste.domain_utils import load_and_rewrite_json
+
 
 def load_employees_from_mapping_files(groundtruth_dir: str) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Load employees from both manager mapping files.
@@ -14,12 +18,10 @@ def load_employees_from_mapping_files(groundtruth_dir: str) -> tuple[List[Dict[s
     mapping_no_errors_path = os.path.join(groundtruth_dir, "manager_mapping_no_error.json")
     
     # Read employees with errors (EMP001-EMP004)
-    with open(mapping_with_errors_path, 'r', encoding='utf-8') as f:
-        mapping_with_errors = json.load(f)
+    mapping_with_errors = load_and_rewrite_json(mapping_with_errors_path)
     
     # Read employees without errors (EMP005-EMP008)
-    with open(mapping_no_errors_path, 'r', encoding='utf-8') as f:
-        mapping_no_errors = json.load(f)
+    mapping_no_errors = load_and_rewrite_json(mapping_no_errors_path)
     
     # Department and level mappings for all employees
     dept_level_map = {

@@ -13,6 +13,7 @@ from typing import Dict, List, Tuple, Any, Optional
 # Import email validation utilities
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'utils', 'app_specific', 'poste'))
 from utils.app_specific.poste.checks import verify_emails_sent_to_recipients, extract_url_patterns_from_email
+from utils.app_specific.poste.domain_utils import rewrite_domain
 
 with open("configs/gcp-service_account.keys.json", "r") as f:
     data = json.load(f)
@@ -79,7 +80,7 @@ class BigQueryDataValidator:
             customers_data_file = current_dir / "customers_data.json"
 
             with open(customers_data_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                return rewrite_domain(json.load(f))
         except Exception as e:
             print(f"❌ Error loading initial customer data: {e}")
             return []
@@ -91,7 +92,7 @@ class BigQueryDataValidator:
             woocommerce_data_file = current_dir / "woocommerce_data.json"
 
             with open(woocommerce_data_file, 'r', encoding='utf-8') as f:
-                woocommerce_data = json.load(f)
+                woocommerce_data = rewrite_domain(json.load(f))
 
             # Filter for first-time customers (orders_count=1)
             customers = woocommerce_data.get("customers", [])
@@ -264,7 +265,7 @@ class WelcomeEmailValidator:
             # Load email configuration for sender
             try:
                 with open(self.email_config_path, 'r', encoding='utf-8') as f:
-                    email_config = json.load(f)
+                    email_config = rewrite_domain(json.load(f))
             except Exception as e:
                 return False, f"Failed to load email config: {e}"
 

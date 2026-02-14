@@ -8,6 +8,12 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
+# Add project root to sys.path for domain_utils import
+_project_root = str(Path(__file__).parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+from utils.app_specific.poste.domain_utils import get_email_domain
+
 def convert_jsonl_to_backup(jsonl_file: str, placeholder_file: str, output_file: str):
     """
     Convert emails in JSONL format to backup JSON format.
@@ -46,12 +52,12 @@ def convert_jsonl_to_backup(jsonl_file: str, placeholder_file: str, output_file:
                 backup_email = {
                     "email_id": str(email_id),
                     "subject": email_data['subject'],
-                    "from_addr": f"{email_data['sender_name']}@mcp.com",  # Simulated sender email
-                    "to_addr": "mary.castillo@mcp.com",  # Receiver email
+                    "from_addr": f"{email_data['sender_name']}@{get_email_domain()}",  # Simulated sender email
+                    "to_addr": f"mary.castillo@{get_email_domain()}",  # Receiver email
                     "cc_addr": None,
                     "bcc_addr": None,
                     "date": datetime.now().strftime("%a, %d %b %Y %H:%M:%S +0800"),
-                    "message_id": f"<{email_id * 123456789}@mcp.com>",
+                    "message_id": f"<{email_id * 123456789}@{get_email_domain()}>",
                     "body_text": content,
                     "body_html": "",
                     "is_read": False,  # New emails are unread by default
