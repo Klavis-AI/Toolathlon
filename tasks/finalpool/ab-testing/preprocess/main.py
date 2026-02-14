@@ -9,15 +9,8 @@ from .ggcloud_clean_log import clean_log
 from .ggcloud_clean_dataset import clean_dataset  
 from .ggcloud_clean_bucket import clean_bucket
 from .ggcloud_upload import upload_csvs_to_bigquery
-
-
-def get_project_id(credentials_path):
-    try:
-        with open(credentials_path, 'r') as f:
-            data = json.load(f)
-            return data.get("project_id")
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+from google.oauth2.credentials import Credentials
+from .utils import get_project_id
 
 
 if __name__ == "__main__":
@@ -26,17 +19,21 @@ if __name__ == "__main__":
     parser.add_argument("--credentials_file", required=False, default="configs/gcp-service_account.keys.json")
     parser.add_argument("--launch_time", required=False, help="Launch time")
     args = parser.parse_args()
-
-    # Get credentials file path
-    credentials_path = Path(args.credentials_file)
     
-    # Make sure the path is absolute
-    if not credentials_path.is_absolute():
-        credentials_path = Path.cwd() / credentials_path
-    
-    credentials = service_account.Credentials.from_service_account_file(credentials_path)
+    credentials_file = "configs/google_cloud_credentials.json"
+    with open(credentials_file, 'r') as f:
+        cred_data = json.load(f)
+    scopes = cred_data.get('scope', '').split()
+    credentials = Credentials(
+        token=cred_data['access_token'],
+        refresh_token=cred_data['refresh_token'],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=cred_data['client_id'],
+        client_secret=cred_data['client_secret'],
+        scopes=scopes
+    )
 
-    project_id = get_project_id(credentials_path)
+    project_id = get_project_id(credentials)
     print(f"Using project: {project_id}")
 
     print("=================  clean log =================")
