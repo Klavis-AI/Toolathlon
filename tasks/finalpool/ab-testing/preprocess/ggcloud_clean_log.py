@@ -3,13 +3,11 @@ from google.cloud.logging_v2.services import config_service_v2
 from google.cloud.logging_v2.types import LogBucket
 from google.cloud.exceptions import NotFound
 from google.api_core import exceptions
-import sys
 import subprocess
 from datetime import datetime, timedelta
 import os
 from google.oauth2 import service_account
 from google.cloud.logging_v2.types import CreateBucketRequest
-import json
 
 # Set path to credentials file
 CREDENTIALS_PATH = "configs/gcp-service_account.keys.json"
@@ -17,23 +15,6 @@ if os.path.exists(CREDENTIALS_PATH):
     CREDENTIALS = service_account.Credentials.from_service_account_file(CREDENTIALS_PATH)
 else:
     CREDENTIALS = None
-
-# Parse project_id from service account file
-with open(CREDENTIALS_PATH, 'r') as f:
-    service_account_info = json.load(f)
-    PROJECT_ID = service_account_info.get('project_id')
-
-def get_project_id():
-    """Get the current Google Cloud project ID"""
-    try:
-        project_id = PROJECT_ID
-        if not project_id or project_id == "(unset)":
-            raise ValueError("No project ID configured")
-        return project_id
-    except Exception as e:
-        print(f"❌ Failed to get project ID: {e}")
-        print("Run: gcloud config set project YOUR_PROJECT_ID")
-        sys.exit(1)
 
 
 def list_log_buckets(project_id: str, credentials=None):
@@ -307,7 +288,9 @@ def clean_log(project_id: str, credentials=CREDENTIALS):
 
 
 if __name__ == "__main__":
-    project_id = get_project_id()
+    from .utils import get_project_id
+
+    project_id = get_project_id(CREDENTIALS)
     print(f"Using project: {project_id}")
 
     manage_log_bucket(project_id)

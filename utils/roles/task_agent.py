@@ -508,6 +508,14 @@ class TaskAgent:
                         os.makedirs(os.path.dirname(credentials_path), exist_ok=True)
                         with open(credentials_path, "w") as f:
                             json.dump(auth_data, f)
+                if server_name == "google_cloud":
+                    details = self._klavis_client.get_sandbox_details(server_name, sb["sandbox_id"])
+                    auth_data = details.get("auth_data", {})
+                    if auth_data:
+                        credentials_path = os.path.join("configs", "google_cloud_credentials.json")
+                        os.makedirs(os.path.dirname(credentials_path), exist_ok=True)
+                        with open(credentials_path, "w") as f:
+                            json.dump(auth_data, f)
                 if server_name == "woocommerce":
                     details = self._klavis_client.get_sandbox_details(server_name, sb["sandbox_id"])
                     auth_data = details.get("auth_data", {})

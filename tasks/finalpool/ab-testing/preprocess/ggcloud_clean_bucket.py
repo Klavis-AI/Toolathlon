@@ -1,6 +1,5 @@
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-import sys
 
 
 def check_storage_bucket_exists(project_id: str, bucket_name: str, credentials=None) -> bool:
@@ -166,24 +165,10 @@ def clean_bucket(project_id: str, credentials=None):
 
 
 if __name__ == "__main__":
-    import subprocess
-    
-    def get_project_id():
-        """Get the current Google Cloud project ID"""
-        try:
-            project_id = subprocess.check_output(
-                ["gcloud", "config", "get-value", "project"],
-                text=True
-            ).strip()
-            if not project_id or project_id == "(unset)":
-                raise ValueError("No project ID configured")
-            return project_id
-        except Exception as e:
-            print(f"❌ Failed to get project ID: {e}")
-            print("Run: gcloud config set project YOUR_PROJECT_ID")
-            sys.exit(1)
-    
-    project_id = get_project_id()
+    from .utils import get_project_id
+
+    credentials = None  # Uses application default credentials
+    project_id = get_project_id(credentials)
     print(f"Using project: {project_id}")
-    
+
     clean_bucket(project_id)
