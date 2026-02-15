@@ -35,8 +35,8 @@ def get_project_id(credentials) -> str:
 
     if email_prefix:
         for project in projects:
-            if _extract_project_id(project) == email_prefix:
-                return email_prefix
+            if project.get("displayName", "") == email_prefix:
+                return project.get("projectId")
 
     # Fallback to first project
     return _extract_project_id(projects[0])
